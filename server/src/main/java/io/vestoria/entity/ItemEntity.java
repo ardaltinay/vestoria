@@ -1,0 +1,53 @@
+package io.vestoria.entity;
+
+import io.vestoria.enums.ItemTier;
+import io.vestoria.enums.ItemUnit;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "items", indexes = {
+        @Index(name = "idx_items_name", columnList = "name")
+})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ItemEntity extends BaseEntity {
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private ItemUnit unit;
+
+    private BigDecimal price;
+
+    private Integer quantity;
+
+    @Column(precision = 5, scale = 2)
+    private BigDecimal qualityScore;
+
+    private Long demand;//talep
+
+    private Long supply;//arz
+
+    @Enumerated(EnumType.STRING)
+    private ItemTier tier;
+
+    @ManyToOne
+    @JoinColumn(name = "building_id")
+    private BuildingEntity building;
+}
