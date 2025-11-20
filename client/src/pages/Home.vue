@@ -31,7 +31,19 @@
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-slate-900 truncate">{{ username }}</div>
-            <div class="text-xs text-slate-500">Seviye 1 Girişimci</div>
+            <!-- XP Bar -->
+            <div class="mt-1">
+              <div class="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                <span>Seviye {{ currentLevel }}</span>
+                <span>{{ currentXp }}/{{ nextLevelXp }} XP</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  class="bg-primary-500 h-1.5 rounded-full transition-all duration-500" 
+                  :style="{ width: `${xpPercentage}%` }"
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -126,16 +138,7 @@
           </div>
         </div>
 
-        <!-- Logout Section -->
-        <div class="pt-4 mt-4 border-t border-slate-100">
-          <button 
-            @click="handleLogout"
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-all duration-200 group"
-          >
-            <ArrowRightIcon class="w-5 h-5 text-rose-400 group-hover:text-rose-600 transition-colors" />
-            Çıkış Yap
-          </button>
-        </div>
+
       </nav>
 
       <!-- Footer -->
@@ -200,10 +203,27 @@
             </div>
           </div>
           <div class="h-8 w-px bg-slate-200 mx-1 hidden sm:block"></div>
-          <button class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
-            <span class="hidden sm:block">Hesabım</span>
-            <ChevronDownIcon class="w-4 h-4 text-slate-400" />
-          </button>
+          
+          <!-- User Menu Dropdown -->
+          <div class="relative">
+            <button 
+              @click="showUserMenu = !showUserMenu"
+              class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900"
+            >
+              <span class="hidden sm:block">Hesabım</span>
+              <ChevronDownIcon class="w-4 h-4 text-slate-400" />
+            </button>
+
+            <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden py-1">
+              <button 
+                @click="handleLogout"
+                class="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+              >
+                <ArrowRightIcon class="w-4 h-4" />
+                Çıkış Yap
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -235,13 +255,19 @@
                   
                   <!-- Quick Action Button -->
                   <div class="flex flex-col gap-3 min-w-[160px]">
-                    <button class="group relative overflow-hidden bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5">
+                    <button 
+                      @click="handleViewReports"
+                      class="group relative overflow-hidden bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5"
+                    >
                       <span class="relative z-10 flex items-center justify-center gap-2">
                         Raporları İncele
                         <ArrowRightIcon class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                       </span>
                     </button>
-                    <button class="px-6 py-3 rounded-xl font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors border border-slate-200 bg-white">
+                    <button 
+                      @click="handleNewInvestment"
+                      class="px-6 py-3 rounded-xl font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors border border-slate-200 bg-white"
+                    >
                       Yeni Yatırım Yap
                     </button>
                   </div>
@@ -251,17 +277,17 @@
                 <div class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-slate-100">
                   <div>
                     <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Günlük Kazanç</div>
-                    <div class="text-2xl font-bold text-slate-900">₺12.450</div>
+                    <div class="text-2xl font-bold text-slate-900">{{ dashboardStats.dailyEarnings ? '₺' + dashboardStats.dailyEarnings : '-' }}</div>
                   </div>
                   <div>
                     <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Aktif İşletme</div>
-                    <div class="text-2xl font-bold text-slate-900">8</div>
+                    <div class="text-2xl font-bold text-slate-900">{{ dashboardStats.activeBusinesses !== null ? dashboardStats.activeBusinesses : '-' }}</div>
                   </div>
                   <div>
                     <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Pazar Payı</div>
                     <div class="text-2xl font-bold text-emerald-600 flex items-center gap-1">
-                      %4.2
-                      <ArrowTrendingUpIcon class="w-4 h-4" />
+                      {{ dashboardStats.marketShare ? '%' + dashboardStats.marketShare.toFixed(1) : '-' }}
+                      <ArrowTrendingUpIcon v-if="dashboardStats.marketShare > 0" class="w-4 h-4" />
                     </div>
                   </div>
                 </div>
@@ -274,15 +300,11 @@
                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                  <h3 class="font-bold text-slate-800 mb-4">Son Aktiviteler</h3>
                  <div class="space-y-4">
-                   <div class="flex items-center gap-3 text-sm">
-                     <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                     <span class="text-slate-600">Çiftlik hasatı tamamlandı</span>
-                     <span class="ml-auto text-slate-400 text-xs">2dk önce</span>
-                   </div>
-                   <div class="flex items-center gap-3 text-sm">
-                     <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-                     <span class="text-slate-600">Yeni dükkan açıldı</span>
-                     <span class="ml-auto text-slate-400 text-xs">1s önce</span>
+                   <div v-if="notifications.length === 0" class="text-slate-400 text-sm">Henüz bir aktivite yok.</div>
+                   <div v-for="notification in notifications.slice(0, 3)" :key="notification.id" class="flex items-center gap-3 text-sm">
+                     <div class="w-2 h-2 rounded-full" :class="notification.isRead ? 'bg-slate-300' : 'bg-emerald-500'"></div>
+                     <span class="text-slate-600 truncate">{{ notification.message }}</span>
+                     <span class="ml-auto text-slate-400 text-xs whitespace-nowrap">{{ new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
                    </div>
                  </div>
                </div>
@@ -297,6 +319,15 @@
         </div>
       </main>
     </div>
+
+    <!-- Create Wizard -->
+    <CreateBuildingWizard 
+      v-if="showWizard" 
+      :building-type="wizardType" 
+      :base-cost="25000"
+      @close="showWizard = false"
+      @create="handleCreate"
+    />
   </div>
 </template>
 
@@ -328,16 +359,101 @@ const authStore = useAuthStore()
 const isSidebarOpen = ref(false)
 const username = computed(() => authStore.user?.username || 'Oyuncu')
 const balance = computed(() => authStore.user?.balance || 0)
-const xp = computed(() => authStore.user?.xp || 0)
+const currentLevel = computed(() => authStore.user?.level || 1)
+const currentXp = computed(() => authStore.user?.xp || 0)
+const nextLevelXp = computed(() => currentLevel.value * 1000)
+const xpPercentage = computed(() => {
+  const percentage = (currentXp.value / nextLevelXp.value) * 100
+  return Math.min(percentage, 100)
+})
 
 // Notifications
 import NotificationService from '../services/NotificationService'
 import { onMounted, onUnmounted } from 'vue'
 
+import UserService from '../services/UserService'
+import { useToast } from '../composables/useToast'
+import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
+
 const showNotifications = ref(false)
+const showUserMenu = ref(false)
 const notifications = ref([])
 const unreadCount = ref(0)
+const dashboardStats = ref({})
+const showWizard = ref(false)
+const wizardType = ref('SHOP') // Default
+const { addToast } = useToast()
+
 let pollingInterval = null
+
+const fetchDashboardStats = async () => {
+  try {
+    const response = await UserService.getDashboardStats()
+    dashboardStats.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch dashboard stats', error)
+  }
+}
+
+const handleNewInvestment = () => {
+  wizardType.value = 'SHOP' // Default or ask user? Let's default to Shop for now
+  showWizard.value = true
+}
+
+const handleViewReports = () => {
+  addToast('Detaylı raporlar çok yakında!', 'info')
+}
+
+const handleCreate = async (payload) => {
+  // The wizard emits create, but the store call happens inside the specific page usually.
+  // But here we are on Home. We need to know which store to call based on type.
+  // Actually, the pages (Shops, Farms etc) handle the creation logic via the store.
+  // If we open the wizard here, we need to handle the creation.
+  // Let's import the stores dynamically or just use a switch.
+  // OR, simpler: Redirect to the specific page and open wizard there?
+  // No, the user wants to do it from here.
+  
+  // Let's implement a simple switch to call the right store.
+  // We need to import stores.
+  // Ideally, we should refactor creation logic to a service, but for now:
+  
+  try {
+    let store;
+    switch(payload.type) {
+        case 'SHOP':
+            const { useShopsStore } = await import('../stores/shopsStore');
+            store = useShopsStore();
+            break;
+        case 'FARM':
+            const { useFarmsStore } = await import('../stores/farmsStore');
+            store = useFarmsStore();
+            break;
+        case 'FACTORY':
+            const { useFactoriesStore } = await import('../stores/factoriesStore');
+            store = useFactoriesStore();
+            break;
+        case 'MINE':
+            const { useMinesStore } = await import('../stores/minesStore');
+            store = useMinesStore();
+            break;
+        case 'GARDEN':
+            const { useGardensStore } = await import('../stores/gardensStore');
+            store = useGardensStore();
+            break;
+    }
+    
+    if (store) {
+        await store.create(payload)
+        addToast('Yatırım başarıyla gerçekleştirildi!', 'success')
+        showWizard.value = false
+        fetchDashboardStats() // Refresh stats
+        // Optionally redirect to the relevant page
+    }
+  } catch (error) {
+     // Error handled globally or by store
+     console.error(error)
+  }
+}
 
 const fetchNotifications = async () => {
   try {
@@ -376,8 +492,11 @@ const formatDate = (dateString) => {
 
 onMounted(() => {
   fetchNotifications()
-  // Poll every 30 seconds
-  pollingInterval = setInterval(fetchNotifications, 30000)
+  fetchDashboardStats()
+  // Poll every 30 seconds for notifications only
+  pollingInterval = setInterval(() => {
+    fetchNotifications()
+  }, 30000)
 })
 
 onUnmounted(() => {

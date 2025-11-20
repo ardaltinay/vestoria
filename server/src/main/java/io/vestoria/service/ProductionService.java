@@ -8,7 +8,7 @@ import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
-import io.vestoria.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,8 @@ public class ProductionService {
 
   private final BuildingRepository buildingRepository;
   private final ItemRepository itemRepository;
-  private final UserRepository userRepository;
+
+  private final UserService userService;
 
   @Scheduled(fixedRate = 60000) // Every minute
   @Transactional
@@ -77,26 +78,7 @@ public class ProductionService {
       UserEntity owner = building.getOwner();
       if (owner != null) {
         long xpGain = 10; // 10 XP per production cycle
-        owner.setXp((owner.getXp() == null ? 0 : owner.getXp()) + xpGain);
-
-        // Check Level Up
-        // Simple formula: Level N requires N * 1000 XP total?
-        // Or next level requires currentLevel * 1000.
-        // Let's use: Level = 1 + (XP / 1000)
-        int currentLevel = owner.getLevel() == null ? 1 : owner.getLevel();
-        long requiredXpForNext = currentLevel * 1000L;
-
-        if (owner.getXp() >= requiredXpForNext) {
-          owner.setLevel(currentLevel + 1);
-          // Maybe send notification?
-        }
-        // We need to save owner. Since it's attached to building, saving building might
-        // cascade?
-        // But we are not saving building here.
-        // We should inject UserRepository and save owner, or just save owner if we can
-        // access repository.
-        // We need to inject UserRepository.
-        userRepository.save(owner);
+        userService.addXp(owner, xpGain);
       }
     }
   }

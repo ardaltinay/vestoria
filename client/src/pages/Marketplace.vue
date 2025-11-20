@@ -61,9 +61,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import MarketService from '../services/MarketService'
+import { useToast } from '../composables/useToast'
 
 const listings = ref([])
 const showSellModal = ref(false)
+const { addToast } = useToast()
 
 const fetchListings = async () => {
   try {
@@ -80,10 +82,10 @@ const buyItem = async (listing) => {
     // The API expects quantity.
     const quantity = 1; // Default to 1 for now
     await MarketService.buyItem(listing.id, quantity)
-    alert('Satın alma başarılı!')
+    addToast('Satın alma başarılı!', 'success')
     fetchListings() // Refresh
   } catch (error) {
-    alert('Satın alma başarısız: ' + (error.response?.data?.message || error.message))
+    // Error handled globally
   }
 }
 

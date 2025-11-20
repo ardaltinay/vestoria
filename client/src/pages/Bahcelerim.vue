@@ -121,7 +121,6 @@ async function handleCreate(payload) {
     await load()
   } catch (error) {
     console.error('Failed to create garden:', error)
-    alert('Bahçe oluşturulurken bir hata oluştu: ' + (error.response?.data?.message || error.message))
   }
 }
 

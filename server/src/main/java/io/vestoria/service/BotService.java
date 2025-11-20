@@ -27,6 +27,7 @@ public class BotService {
   private final UserRepository userRepository;
   private final TransactionRepository transactionRepository;
   private final NotificationService notificationService;
+  private final UserService userService;
 
   @Scheduled(fixedRate = 600000) // Every 10 minutes
   @Transactional
@@ -49,12 +50,10 @@ public class BotService {
           // Update Shop Owner Balance
           UserEntity owner = shop.getOwner();
           owner.setBalance(owner.getBalance().add(totalEarnings));
-
-          // Update XP (Progression)
-          owner.setXp(owner.getXp() + (quantityToBuy * 10L)); // 10 XP per item
-          // Level up logic check could be here
-
           userRepository.save(owner);
+
+          // Update XP (Progression) via UserService
+          userService.addXp(owner, quantityToBuy * 10L); // 10 XP per item
 
           // Remove items
           item.setQuantity(0);
