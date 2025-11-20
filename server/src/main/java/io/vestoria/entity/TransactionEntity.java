@@ -1,6 +1,10 @@
 package io.vestoria.entity;
 
+import io.vestoria.enums.TransactionType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -10,6 +14,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "market_transactions", indexes = {
@@ -23,13 +29,23 @@ import lombok.Setter;
 @Builder
 public class TransactionEntity extends BaseEntity {
 
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private TransactionType type;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal price;
+
+    private Integer amount;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "buyer_id")
     private UserEntity buyer;
 
     @ManyToOne(optional = false)
+    @JoinColumn(name = "seller_id")
+    private UserEntity seller;
+
+    @ManyToOne
     @JoinColumn(name = "market_item_id")
     private MarketEntity marketItem;
 }

@@ -1,60 +1,31 @@
-// Simple API utility: routes frontend requests starting with `/api` to the backend.
-// Base URL is configurable via `VITE_API_BASE`. Defaults to http://localhost:8081
+import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8081'
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-function buildUrl(path) {
-  // Only rewrite requests that begin with `/api`
-  if (!path || typeof path !== 'string') return API_BASE
-  if (path.startsWith('/api')) {
-    return API_BASE.replace(/\/$/, '') + path
-  }
-  return path
-}
+// Add a request interceptor to include the token if it exists
+// Note: Since we are using httpOnly cookies for accessToken, we might not need this if the browser handles it.
+// But if we were using localStorage, we would add it here.
+// The backend sets a cookie 'accessToken', so browser should send it automatically.
 
-async function request(path, { method = 'GET', data = null, headers = {} } = {}) {
-  const url = buildUrl(path)
-  const opts = { method, headers: { ...headers } }
+import { useToast } from '../composables/useToast';
 
-  // use cookies for authentication (HttpOnly cookies set by backend)
-  opts.credentials = 'include'
+const { addToast } = useToast();
 
-  if (data !== null && method !== 'GET' && method !== 'HEAD') {
-    if (!(data instanceof FormData)) {
-      opts.headers['Content-Type'] = 'application/json'
-      opts.body = JSON.stringify(data)
-    } else {
-      // allow multipart form data
-      delete opts.headers['Content-Type']
-      opts.body = data
+api.interceptors.response.use(
+  response => response,
+  error => {
+    const message = error.response?.data?.message || 'Bir hata oluştu';
+    // Don't show toast for 401 (Unauthorized) as it might be just a session expiry redirect
+    if (error.response?.status !== 401) {
+      addToast(message, 'error');
     }
+    return Promise.reject(error);
   }
+);
 
-  const res = await fetch(url, opts)
-  const contentType = res.headers.get('content-type') || ''
-  if (!res.ok) {
-    let body = null
-    try {
-      body = contentType.includes('application/json') ? await res.json() : await res.text()
-    } catch {
-      body = null
-    }
-    const err = new Error(res.statusText || 'HTTP error')
-    err.status = res.status
-    err.body = body
-    throw err
-  }
-
-  if (contentType.includes('application/json')) return res.json()
-  return res.text()
-}
-
-export const api = {
-  get: (path, headers) => request(path, { method: 'GET', headers }),
-  post: (path, data, headers) => request(path, { method: 'POST', data, headers }),
-  put: (path, data, headers) => request(path, { method: 'PUT', data, headers }),
-  del: (path, headers) => request(path, { method: 'DELETE', headers }),
-  request,
-}
-
-export default api
+export default api;

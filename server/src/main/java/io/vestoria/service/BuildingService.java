@@ -1,183 +1,296 @@
 package io.vestoria.service;
 
-import io.vestoria.converter.BuildingConverter;
-import io.vestoria.dto.request.CreateBuildingRequestDto;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingType;
-import io.vestoria.exception.LimitExceededException;
-import io.vestoria.exception.NotFoundException;
+import io.vestoria.enums.BuildingTier;
+import io.vestoria.enums.BuildingStatus;
+import io.vestoria.enums.BuildingSubType;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.UserRepository;
+import io.vestoria.exception.InsufficientBalanceException;
+import io.vestoria.exception.ResourceNotFoundException;
+import io.vestoria.exception.UnauthorizedAccessException;
+import io.vestoria.exception.BusinessRuleException;
+import io.vestoria.dto.response.BuildingConfigDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
 public class BuildingService {
+
     private final BuildingRepository buildingRepository;
     private final UserRepository userRepository;
-    private final BuildingConverter buildingConverter;
 
-    public ResponseEntity<?> createBuilding(CreateBuildingRequestDto request) {
-        UserEntity userEntity = userRepository.findById(UUID.fromString(request.ownerId()))
-                .orElseThrow(() -> new NotFoundException("Kullanıcıya ait bilgilere ulaşılamadı!"));
+    @Transactional
+    @SuppressWarnings("null")
+    public BuildingEntity createBuilding(UserEntity owner, BuildingType type, BuildingTier tier,
+            BuildingSubType subType) {
+        // Calculate cost based on tier
+        BigDecimal cost = getBuildingCost(type, tier, 1);
 
-        BigDecimal cost = calculateCost(request.level(), request.type());
-
-        if (userEntity.getBalance().compareTo(cost) < 0) {
-            throw new LimitExceededException("Bakiye yetersiz'");
+        if (owner.getBalance().compareTo(cost) < 0) {
+            throw new InsufficientBalanceException(
+                    "Yetersiz bakiye! Bu işlem için " + cost + " TL gerekiyor.");
         }
 
-        BuildingEntity buildingEntity = BuildingEntity.builder()
-                .type(request.type())
-                .subType(request.subType())
-                .owner(userEntity)
-                .items(Collections.emptyList())
-                .cost(calculateCost(request.level(), request.type()))
-                .maxStock(calculateMaxStock(request.level(), request.type()))
-                .productionRate(calculateProductionRate(request.level(), request.type()))
-                .level(request.level())
-                .status("ACTIVE")
+        owner.setBalance(owner.getBalance().subtract(cost));
+        userRepository.save(owner);
+
+        BuildingEntity building = BuildingEntity.builder()
+                .owner(owner)
+                .type(type)
+                .tier(tier)
+                .subType(subType)
+                .level(1)
+                .productionRate(getProductionRate(type, tier, 1))
+                .maxSlots(getMaxSlots(tier))
+                .status(BuildingStatus.ACTIVE)
+                .cost(cost)
+                .maxStock(getStorageCapacity(type, tier, 1))
                 .build();
 
-        BuildingEntity savedBuilding = buildingRepository.save(buildingEntity);
-
-        // building kaydedildikten sonra kullanıcının balance düşürülür
-        BigDecimal subtract = userEntity.getBalance().subtract(cost);
-        userEntity.setBalance(subtract);
-        userRepository.save(userEntity);
-
-        return ResponseEntity.ok(buildingConverter.toDto(savedBuilding));
+        return buildingRepository.save(building);
     }
 
-    private BigDecimal calculateCost(int level, BuildingType type) {
-        if (type == null || level < 1 || level > 3) {
-            return BigDecimal.ZERO;
-        }
-
-        long baseCost = 0;
-
-        switch (type) {
-            case SHOP:
-                baseCost = 25_000;
-                break;
-            case GARDEN:
-                baseCost = 35_000;
-                break;
-            case FARM:
-                baseCost = 45_000;
-                break;
-            case FACTORY:
-                baseCost = 60_000;
-                break;
-            case MINE:
-                baseCost = 65_000;
-                break;
-            default:
-                return BigDecimal.ZERO;
-        }
-
-        long levelIncrement = 0;
-        switch (level) {
-            case 1:
-                break;
-            case 2:
-                levelIncrement = 10_000;
-                break;
-            case 3:
-                levelIncrement = 25_000;
-                break;
-        }
-
-        return BigDecimal.valueOf(baseCost + levelIncrement);
+    @Transactional
+    public BuildingEntity createBuilding(String username, BuildingType type, BuildingTier tier,
+            BuildingSubType subType) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
+        return createBuilding(user, type, tier, subType);
     }
 
-    private Integer calculateMaxStock(int level, BuildingType type) {
-        if (type == null || level < 1 || level > 3) {
-            return 0;
-        }
-
-        int baseStock = 0;
-
-        switch (type) {
-            case SHOP:
-                baseStock = 500;
-                break;
-            case GARDEN:
-                baseStock = 1_000;
-                break;
-            case FARM:
-                baseStock = 1_500;
-                break;
-            case FACTORY:
-                baseStock = 2_000;
-                break;
-            case MINE:
-                baseStock = 2_500;
-                break;
-            default:
-                return 0;
-        }
-
-        int levelIncrement = 0;
-        switch (level) {
-            case 1:
-                break;
-            case 2:
-                levelIncrement = 500;
-                break;
-            case 3:
-                levelIncrement = 1_000;
-                break;
-        }
-
-        return baseStock + levelIncrement;
+    @Transactional
+    public BuildingEntity upgradeBuilding(UUID buildingId, String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
+        return upgradeBuilding(buildingId, user.getId());
     }
 
-    private Long calculateProductionRate(int level, BuildingType type) {
-        if (type == null || level < 1 || level > 3) {
-            return 0L;
+    @Transactional
+    @SuppressWarnings("null")
+    public BuildingEntity upgradeBuilding(UUID buildingId, UUID userId) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
+
+        if (!building.getOwner().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("Bu binayı yükseltme yetkiniz yok.");
         }
 
-        long baseTime = 900_000L; // 15 dakika
+        if (building.getLevel() >= 3) {
+            throw new BusinessRuleException("Bina zaten maksimum seviyede (Seviye 3).");
+        }
 
+        int nextLevel = building.getLevel() + 1;
+        BigDecimal upgradeCost = getBuildingCost(building.getType(), building.getTier(), nextLevel);
+        UserEntity user = building.getOwner();
+
+        if (user.getBalance().compareTo(upgradeCost) < 0) {
+            throw new InsufficientBalanceException(
+                    "Yetersiz bakiye! Yükseltme için " + upgradeCost + " TL gerekiyor.");
+        }
+
+        user.setBalance(user.getBalance().subtract(upgradeCost));
+        userRepository.save(user);
+
+        building.setLevel(nextLevel);
+        building.setProductionRate(getProductionRate(building.getType(), building.getTier(), nextLevel));
+        building.setMaxStock(getStorageCapacity(building.getType(), building.getTier(), nextLevel));
+        building.setStatus(BuildingStatus.UPGRADING); // Set status to UPGRADING during upgrade if needed, or keep
+                                                      // ACTIVE
+
+        return buildingRepository.save(building);
+    }
+
+    public List<BuildingEntity> getUserBuildings(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+        return getUserBuildings(user.getId());
+    }
+
+    public List<BuildingEntity> getUserBuildings(UUID userId) {
+        return buildingRepository.findByOwnerId(userId);
+    }
+
+    public List<BuildingConfigDto> getBuildingConfigs() {
+        List<BuildingConfigDto> configs = new ArrayList<>();
+        for (BuildingType type : BuildingType.values()) {
+            for (BuildingTier tier : BuildingTier.values()) {
+                configs.add(BuildingConfigDto.builder()
+                        .type(type)
+                        .tier(tier)
+                        .cost(getBuildingCost(type, tier, 1))
+                        .productionRate(getProductionRate(type, tier, 1))
+                        .maxStock(getStorageCapacity(type, tier, 1))
+                        .maxSlots(getMaxSlots(tier))
+                        .build());
+            }
+        }
+        return configs;
+    }
+
+    private BigDecimal getBuildingCost(BuildingType type, BuildingTier tier, int level) {
+        // Base costs for SMALL tier (in thousands)
+        BigDecimal baseCost;
         switch (type) {
             case SHOP:
+                baseCost = BigDecimal.valueOf(25000);
                 break;
             case GARDEN:
-                baseTime = 720_000L; // 12 dakika
+                baseCost = BigDecimal.valueOf(35000);
                 break;
             case FARM:
-                baseTime = 900_000L; // 15 dakika
+                baseCost = BigDecimal.valueOf(45000);
                 break;
             case FACTORY:
-                baseTime = 1_080_000L; // 18 dakika
+                baseCost = BigDecimal.valueOf(55000);
                 break;
             case MINE:
-                baseTime = 1_200_000L; // 20 dakika
+                baseCost = BigDecimal.valueOf(65000);
                 break;
             default:
-                return 0L;
+                baseCost = BigDecimal.valueOf(25000);
         }
 
-        long levelDecrement = 0L;
-        switch (level) {
-            case 1:
-                break;
-            case 2:
-                levelDecrement = 120_000L; // 2 dakika
-                break;
-            case 3:
-                levelDecrement = 300_000L; // 5 dakika
-                break;
+        // Adjust for Tier (Additive based on user request pattern)
+        // User Request:
+        // Shop: 25, 35, 50 (+10, +25)
+        // Garden: 35, 45, 60 (+10, +25)
+        // Farm: 45, 55, 70 (+10, +25)
+        // Factory: 55, 65, 80 (+10, +25)
+        // Mine: 65, 75, 90 (+10, +25)
+
+        if (tier != null) {
+            switch (tier) {
+                case MEDIUM:
+                    baseCost = baseCost.add(BigDecimal.valueOf(10000));
+                    break;
+                case LARGE:
+                    baseCost = baseCost.add(BigDecimal.valueOf(25000));
+                    break;
+                default: // SMALL
+                    break;
+            }
         }
 
-        return baseTime - levelDecrement;
+        // Level Multiplier (Keep existing logic)
+        if (level == 2)
+            return baseCost.multiply(BigDecimal.valueOf(1.5));
+        if (level == 3)
+            return baseCost.multiply(BigDecimal.valueOf(2.5));
+        return baseCost;
+    }
+
+    private BigDecimal getProductionRate(BuildingType type, BuildingTier tier, int level) {
+        // Base production rate increases from Garden to Mine
+        BigDecimal rate;
+        switch (type) {
+            case SHOP:
+                rate = BigDecimal.ZERO; // Shops don't produce
+                break;
+            case GARDEN:
+                rate = BigDecimal.valueOf(10);
+                break;
+            case FARM:
+                rate = BigDecimal.valueOf(20);
+                break;
+            case FACTORY:
+                rate = BigDecimal.valueOf(40);
+                break;
+            case MINE:
+                rate = BigDecimal.valueOf(80);
+                break;
+            default:
+                rate = BigDecimal.ONE;
+        }
+
+        // Tier Multiplier
+        if (tier != null && type != BuildingType.SHOP) {
+            switch (tier) {
+                case MEDIUM:
+                    rate = rate.multiply(BigDecimal.valueOf(1.5));
+                    break;
+                case LARGE:
+                    rate = rate.multiply(BigDecimal.valueOf(2.0));
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Level Multiplier
+        if (level == 2)
+            rate = rate.multiply(BigDecimal.valueOf(2));
+        if (level == 3)
+            rate = rate.multiply(BigDecimal.valueOf(4));
+
+        return rate;
+    }
+
+    private Integer getStorageCapacity(BuildingType type, BuildingTier tier, int level) {
+        // Base storage
+        int base;
+
+        if (type == BuildingType.SHOP) {
+            // Shops need high storage for selling
+            base = 500;
+        } else {
+            // Production buildings storage
+            switch (type) {
+                case GARDEN:
+                    base = 100;
+                    break;
+                case FARM:
+                    base = 200;
+                    break;
+                case FACTORY:
+                    base = 400;
+                    break;
+                case MINE:
+                    base = 800;
+                    break;
+                default:
+                    base = 100;
+            }
+        }
+
+        if (tier != null) {
+            switch (tier) {
+                case MEDIUM:
+                    base = (int) (base * 2.0);
+                    break;
+                case LARGE:
+                    base = (int) (base * 5.0);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return base * level;
+    }
+
+    private Integer getMaxSlots(BuildingTier tier) {
+        if (tier == null)
+            return 1;
+        switch (tier) {
+            case SMALL:
+                return 1;
+            case MEDIUM:
+                return 2;
+            case LARGE:
+                return 4;
+            default:
+                return 1;
+        }
     }
 }

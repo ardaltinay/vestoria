@@ -1,6 +1,8 @@
 package io.vestoria.entity;
 
+import io.vestoria.enums.BuildingStatus;
 import io.vestoria.enums.BuildingType;
+import io.vestoria.enums.BuildingTier;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,23 +29,28 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class BuildingEntity extends BaseEntity {
-
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
     private BuildingType type;
 
-    private String subType;
+    @Enumerated(EnumType.STRING)
+    private BuildingTier tier;
 
-    @Column(columnDefinition = "integer CHECK (level <= 5)")
+    @Enumerated(EnumType.STRING)
+    private io.vestoria.enums.BuildingSubType subType;
+
     private Integer level;
 
-    private String status;
+    private BigDecimal productionRate;
+
+    private Integer maxSlots;
+
+    @Enumerated(EnumType.STRING)
+    private BuildingStatus status;
 
     private BigDecimal cost;
 
     private Integer maxStock;
-
-    private Long productionRate;
 
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)

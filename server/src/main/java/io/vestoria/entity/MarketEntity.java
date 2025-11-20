@@ -12,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "market_items", indexes = {
         @Index(name = "idx_market_items_seller_id", columnList = "seller_id"),
@@ -32,6 +34,14 @@ public class MarketEntity extends BaseEntity {
     @JoinColumn(name = "item_id")
     private ItemEntity item;
 
+    @Column(precision = 18, scale = 2)
+    private BigDecimal price;
+
+    private Integer quantity;
+
     @Column(name = "is_active")
     private Boolean isActive;
+
+    @jakarta.persistence.Version
+    private Long version;
 }

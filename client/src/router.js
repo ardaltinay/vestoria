@@ -43,6 +43,7 @@ const routes = [
       { path: 'mines', name: 'Mines', component: Madenlerim },
       { path: 'mines/new', name: 'MineCreate', component: () => import('./pages/mines/MineCreate.vue') },
       { path: 'mines/:id', name: 'MineDetail', component: () => import('./pages/mines/MineDetail.vue') },
+      { path: 'market', name: 'Marketplace', component: () => import('./pages/Marketplace.vue') },
     ]
   }
 ];

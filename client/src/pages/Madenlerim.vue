@@ -5,7 +5,7 @@
       description="Mevcut madenlerinizi yönetin ve kaynak çıkarımını kontrol edin."
     >
       <template #actions>
-        <AppButton variant="primary" @click="$router.push('/home/mines/new')">
+        <AppButton variant="primary" @click="showWizard = true">
           <template #icon-left>
             <PlusIcon class="w-5 h-5" />
           </template>
@@ -26,7 +26,7 @@
       </div>
       <h3 class="text-lg font-bold text-slate-900 mb-2">Henüz Madeniniz Yok</h3>
       <p class="text-slate-500 max-w-md mx-auto mb-6">Yeraltı zenginliklerine ulaşmak için ilk madenini aç. Madenler değerli kaynaklar sağlar.</p>
-      <AppButton variant="primary" @click="$router.push('/home/mines/new')">
+      <AppButton variant="primary" @click="showWizard = true">
         Hemen Başla
       </AppButton>
     </div>
@@ -79,6 +79,14 @@
         </template>
       </AppCard>
     </div>
+    <!-- Create Wizard -->
+    <CreateBuildingWizard 
+      v-if="showWizard" 
+      building-type="MINE" 
+      :base-cost="25000"
+      @close="showWizard = false"
+      @create="handleCreate"
+    />
   </div>
 </template>
 
@@ -88,11 +96,13 @@ import { useMinesStore } from '../stores/minesStore'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import AppCard from '../components/AppCard.vue'
+import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 import { PlusIcon, MapIcon } from '@heroicons/vue/24/outline'
 
 const store = useMinesStore()
 const items = ref([])
 const loading = ref(true)
+const showWizard = ref(false)
 
 async function load() {
   loading.value = true
@@ -101,6 +111,17 @@ async function load() {
     items.value = store.items
   } finally {
     loading.value = false
+  }
+}
+
+async function handleCreate(payload) {
+  try {
+    await store.create(payload)
+    showWizard.value = false
+    await load()
+  } catch (error) {
+    console.error('Failed to create mine:', error)
+    alert('Maden oluşturulurken bir hata oluştu: ' + (error.response?.data?.message || error.message))
   }
 }
 

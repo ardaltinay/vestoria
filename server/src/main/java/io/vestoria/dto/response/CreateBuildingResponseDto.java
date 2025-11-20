@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.math.BigDecimal;
 
 @Builder
-public record CreateBuildingResponseDto(String id, String type, String subType, String ownerId,
-                                        BigDecimal cost, Integer maxStock, Long productionRate,
-                                        Integer level, String status) {
+public record CreateBuildingResponseDto(String id, String type, String subType, String tier, String ownerId,
+    BigDecimal cost, Integer maxStock, BigDecimal productionRate,
+    Integer level, String status) {
 }

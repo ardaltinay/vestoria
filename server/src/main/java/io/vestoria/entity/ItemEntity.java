@@ -2,6 +2,7 @@ package io.vestoria.entity;
 
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
+import io.vestoria.enums.ItemCategory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -40,12 +41,15 @@ public class ItemEntity extends BaseEntity {
     @Column(precision = 5, scale = 2)
     private BigDecimal qualityScore;
 
-    private Long demand;//talep
+    private Long demand;// talep
 
-    private Long supply;//arz
+    private Long supply;// arz
 
     @Enumerated(EnumType.STRING)
     private ItemTier tier;
+
+    @Enumerated(EnumType.STRING)
+    private ItemCategory category;
 
     @ManyToOne
     @JoinColumn(name = "building_id")

@@ -1,17 +1,34 @@
 import { defineStore } from 'pinia'
-import { createResourceService } from '../services/resourceService'
-
-const svc = createResourceService('shops', [
-  { id: 'shop-1', name: 'Merkez Dükkan', description: 'Şehrin merkezi dükkanı.', level: 2, revenue: 12.5 },
-  { id: 'shop-2', name: 'Küçük Bakkal', description: 'Mahalle bakkalı.', level: 1, revenue: 3.2 }
-])
+import BuildingService from '../services/BuildingService'
 
 export const useShopsStore = defineStore('shops', {
   state: () => ({ items: [] }),
   actions: {
-    load() { this.items = svc.getAll() },
-    getById(id) { return svc.getById(id) },
-    create(payload) { const it = svc.create(payload); this.load(); return it },
-    update(id, patch) { const it = svc.update(id, patch); this.load(); return it }
+    async load() {
+      try {
+        const response = await BuildingService.getUserBuildings()
+        // Filter only SHOP type buildings
+        this.items = response.data.filter(b => b.type === 'SHOP')
+      } catch (error) {
+        console.error('Failed to load shops:', error)
+      }
+    },
+    async getById(id) {
+      // If items not loaded, load them first? Or fetch specific?
+      // For now, find in items or fetch all.
+      if (this.items.length === 0) await this.load()
+      return this.items.find(i => i.id === id)
+    },
+    async create(payload) {
+      // payload should contain { type: 'SHOP', subType: '...', tier: '...' }
+      const response = await BuildingService.createBuilding('SHOP', payload.tier, payload.subType || 'MARKET')
+      await this.load()
+      return response.data
+    },
+    async update(id, patch) {
+      // Implement upgrade logic here if needed
+      // For now, just reload
+      await this.load()
+    }
   }
 })

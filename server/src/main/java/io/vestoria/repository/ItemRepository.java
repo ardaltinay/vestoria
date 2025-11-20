@@ -18,6 +18,8 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
     @Query("SELECT new io.vestoria.dto.ItemAggregateDto(i.name, COUNT(i), COALESCE(SUM(i.quantity),0)) FROM ItemEntity i GROUP BY i.name")
     List<ItemAggregateDto> aggregateByName();
 
+    java.util.Optional<ItemEntity> findByBuildingIdAndName(UUID buildingId, String name);
+
     @Modifying(clearAutomatically = true)
     @Transactional
     @Query("UPDATE ItemEntity i SET i.supply = :supply, i.demand = :demand, i.tier = :tier WHERE i.name = :name")

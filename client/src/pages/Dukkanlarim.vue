@@ -5,7 +5,7 @@
       description="Mevcut dükkanlarınızı yönetin ve gelir durumlarını kontrol edin."
     >
       <template #actions>
-        <AppButton variant="primary" @click="$router.push('/home/shops/new')">
+        <AppButton variant="primary" @click="showWizard = true">
           <template #icon-left>
             <PlusIcon class="w-5 h-5" />
           </template>
@@ -26,7 +26,7 @@
       </div>
       <h3 class="text-lg font-bold text-slate-900 mb-2">Henüz Dükkanınız Yok</h3>
       <p class="text-slate-500 max-w-md mx-auto mb-6">Ticaret hayatına atılmak için ilk dükkanınızı açın. Dükkanlar size düzenli nakit akışı sağlar.</p>
-      <AppButton variant="primary" @click="$router.push('/home/shops/new')">
+      <AppButton variant="primary" @click="showWizard = true">
         Hemen Başla
       </AppButton>
     </div>
@@ -57,7 +57,7 @@
           
           <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
             <span class="text-xs font-medium text-slate-500 uppercase">Gelir</span>
-            <span class="text-sm font-bold text-emerald-600">{{ shop.revenue }} ₺/dk</span>
+            <span class="text-sm font-bold text-emerald-600">{{ shop.productionRate }} ₺/dk</span>
           </div>
         </div>
 
@@ -73,6 +73,14 @@
         </template>
       </AppCard>
     </div>
+    <!-- Create Wizard -->
+    <CreateBuildingWizard 
+      v-if="showWizard" 
+      building-type="SHOP" 
+      :base-cost="25000"
+      @close="showWizard = false"
+      @create="handleCreate"
+    />
   </div>
 </template>
 
@@ -82,11 +90,13 @@ import { useShopsStore } from '../stores/shopsStore'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import AppCard from '../components/AppCard.vue'
+import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 import { PlusIcon, BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
 
 const store = useShopsStore()
 const shops = ref([])
 const loading = ref(true)
+const showWizard = ref(false)
 
 async function load() {
   loading.value = true
@@ -95,6 +105,17 @@ async function load() {
     shops.value = store.items
   } finally {
     loading.value = false
+  }
+}
+
+async function handleCreate(payload) {
+  try {
+    await store.create(payload)
+    showWizard.value = false
+    await load()
+  } catch (error) {
+    console.error('Failed to create shop:', error)
+    alert('Dükkan oluşturulurken bir hata oluştu: ' + (error.response?.data?.message || error.message))
   }
 }
 

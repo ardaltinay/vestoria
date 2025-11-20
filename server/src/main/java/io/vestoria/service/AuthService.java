@@ -8,6 +8,8 @@ import io.vestoria.dto.response.AuthResponseDto;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.repository.UserRepository;
 import io.vestoria.security.JwtTokenProvider;
+import io.vestoria.exception.ResourceNotFoundException;
+import io.vestoria.exception.BusinessRuleException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,11 @@ public class AuthService {
 
     public AuthResult login(LoginRequestDto request) {
         UserEntity userEntity = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
         if (!StringUtils.hasLength(userEntity.getPassword())
                 || !passwordEncoder.matches(request.getPassword(), userEntity.getPassword())) {
-            throw new RuntimeException("Şifre Yanlış!");
+            throw new BusinessRuleException("Şifre Yanlış!");
         }
 
         String token = jwtTokenProvider.generateToken(userEntity.getUsername());
@@ -40,11 +42,11 @@ public class AuthService {
 
     public AuthResult register(RegisterRequestDto request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Bu Kullanıcı Adı Kullanılıyor!");
+            throw new BusinessRuleException("Bu Kullanıcı Adı Kullanılıyor!");
         }
 
         if (userRepository.existByEmail(request.getEmail())) {
-            throw new RuntimeException("Bu Email Adresi Kullanııyor!");
+            throw new BusinessRuleException("Bu Email Adresi Kullanılıyor!");
         }
 
         UserEntity entity = UserEntity.builder()
@@ -56,6 +58,7 @@ public class AuthService {
                 .xp(1L)
                 .build();
 
+        @SuppressWarnings("null")
         UserEntity saved = userRepository.save(entity);
         String token = jwtTokenProvider.generateToken(saved.getUsername());
         AuthResponseDto userDto = authConverter.toAuthDto(saved);

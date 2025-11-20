@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Node / Vite / Vue (client)
+client/node_modules/
+client/dist/
+client/.vite/
+client/.cache/
+client/.eslintcache
+client/coverage/
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+client/.env.local
+client/.env.*.local
+
+# Java / Maven (server)
+server/target/
+server/.classpath
+server/.project
+server/.settings/
+server/.factorypath
+server/hs_err_pid*.log
+
+# IDEs and Editors
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Logs at repo root
+*.log
+
+# Uploads (runtime) - ignore everything under uploads/ but keep .gitkeep placeholders
+uploads/**
+!uploads/.gitkeep
+!uploads/**/.gitkeep
+
+# Server-side uploads (if used by the backend)
+server/uploads/**
+!server/uploads/.gitkeep
+!server/uploads/**/.gitkeep
+
+# Misc
+Thumbs.db

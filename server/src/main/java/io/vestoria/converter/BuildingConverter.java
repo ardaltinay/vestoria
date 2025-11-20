@@ -13,8 +13,9 @@ public class BuildingConverter {
                 .level(entity.getLevel())
                 .cost(entity.getCost())
                 .type(entity.getType().name())
+                .tier(entity.getTier() != null ? entity.getTier().name() : null)
                 .maxStock(entity.getMaxStock())
-                .status(entity.getStatus())
+                .status(entity.getStatus().name())
                 .productionRate(entity.getProductionRate())
                 .ownerId(entity.getOwner().getId().toString())
                 .build();

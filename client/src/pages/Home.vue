@@ -39,7 +39,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
             <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nakit</div>
-            <div class="text-sm font-bold text-emerald-600">₺4.414</div>
+            <div class="text-sm font-bold text-emerald-600">₺{{ balance }}</div>
           </div>
           <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
             <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prestij</div>
@@ -49,40 +49,93 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">İşletmeler</div>
-        
-        <RouterLink 
-          v-for="item in menuItems" 
-          :key="item.path" 
-          :to="item.path"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
-          :class="[
-            $route.path.startsWith(item.path) 
-              ? 'bg-primary-50 text-primary-700' 
-              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-          ]"
-          @click="isSidebarOpen = false"
-        >
-          <component 
-            :is="item.icon" 
-            class="w-5 h-5 transition-colors"
-            :class="[
-              $route.path.startsWith(item.path) ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'
-            ]"
-          />
-          {{ item.label }}
-        </RouterLink>
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+        <!-- Business Section -->
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">İşletmeler</div>
+          <div class="space-y-1">
+            <RouterLink 
+              v-for="item in businessItems" 
+              :key="item.path" 
+              :to="item.path"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
+              :class="[
+                $route.path.startsWith(item.path) 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              ]"
+              @click="isSidebarOpen = false"
+            >
+              <component 
+                :is="item.icon" 
+                class="w-5 h-5 transition-colors"
+                :class="[
+                  $route.path.startsWith(item.path) ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'
+                ]"
+              />
+              {{ item.label }}
+            </RouterLink>
+          </div>
+        </div>
 
-        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2 mt-6">Sosyal</div>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
-          <UsersIcon class="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
-          Davet Et
-        </a>
-        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group">
-          <NewspaperIcon class="w-5 h-5 text-slate-400 group-hover:text-slate-600" />
-          Gazete
-        </a>
+        <!-- Market Section -->
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Pazar</div>
+          <div class="space-y-1">
+            <RouterLink 
+              v-for="item in marketItems" 
+              :key="item.path" 
+              :to="item.path"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
+              :class="[
+                $route.path.startsWith(item.path) 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              ]"
+              @click="isSidebarOpen = false"
+            >
+              <component 
+                :is="item.icon" 
+                class="w-5 h-5 transition-colors"
+                :class="[
+                  $route.path.startsWith(item.path) ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'
+                ]"
+              />
+              {{ item.label }}
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Social Section -->
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Sosyal</div>
+          <div class="space-y-1">
+            <a 
+              v-for="item in socialItems"
+              :key="item.label"
+              :href="item.path" 
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group"
+            >
+              <component 
+                :is="item.icon" 
+                class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors"
+              />
+              {{ item.label }}
+            </a>
+          </div>
+        </div>
+
+        <!-- Logout Section -->
+        <div class="pt-4 mt-4 border-t border-slate-100">
+          <button 
+            @click="handleLogout"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-all duration-200 group"
+          >
+            <ArrowRightIcon class="w-5 h-5 text-rose-400 group-hover:text-rose-600 transition-colors" />
+            Çıkış Yap
+          </button>
+        </div>
       </nav>
 
       <!-- Footer -->
@@ -112,10 +165,40 @@
         </div>
 
         <div class="flex items-center gap-3 sm:gap-4">
-          <button class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative">
-            <BellIcon class="w-6 h-6" />
-            <span class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
-          </button>
+          <div class="relative">
+            <button 
+              @click="toggleNotifications"
+              class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
+            >
+              <BellIcon class="w-6 h-6" />
+              <span v-if="unreadCount > 0" class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+            </button>
+
+            <!-- Notification Dropdown -->
+            <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden">
+              <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-sm font-bold text-slate-700">Bildirimler</h3>
+                <button @click="markAllRead" class="text-xs text-primary-600 hover:text-primary-700 font-medium">Tümünü Okundu Yap</button>
+              </div>
+              <div class="max-h-96 overflow-y-auto">
+                <div v-if="notifications.length === 0" class="p-4 text-center text-sm text-slate-500">
+                  Henüz bildiriminiz yok.
+                </div>
+                <div 
+                  v-for="notification in notifications" 
+                  :key="notification.id"
+                  class="p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-3"
+                  :class="{ 'bg-primary-50/30': !notification.isRead }"
+                >
+                  <div class="mt-1 w-2 h-2 rounded-full flex-shrink-0" :class="notification.isRead ? 'bg-slate-200' : 'bg-primary-500'"></div>
+                  <div class="flex-1">
+                    <p class="text-sm text-slate-800 leading-snug">{{ notification.message }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ formatDate(notification.createdAt) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="h-8 w-px bg-slate-200 mx-1 hidden sm:block"></div>
           <button class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
             <span class="hidden sm:block">Hesabım</span>
@@ -219,7 +302,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { 
   HomeIcon, 
   BuildingStorefrontIcon, 
@@ -236,10 +319,80 @@ import {
   ArrowTrendingUpIcon
 } from '@heroicons/vue/24/outline'
 import Logo from '../components/Logo.vue'
+import AuthService from '../services/AuthService'
+import { useAuthStore } from '../stores/authStore'
 
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const isSidebarOpen = ref(false)
-const username = ref('Arda') // Mock username
+const username = computed(() => authStore.user?.username || 'Oyuncu')
+const balance = computed(() => authStore.user?.balance || 0)
+const xp = computed(() => authStore.user?.xp || 0)
+
+// Notifications
+import NotificationService from '../services/NotificationService'
+import { onMounted, onUnmounted } from 'vue'
+
+const showNotifications = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
+let pollingInterval = null
+
+const fetchNotifications = async () => {
+  try {
+    const [notifsRes, countRes] = await Promise.all([
+      NotificationService.getNotifications(),
+      NotificationService.getUnreadCount()
+    ])
+    notifications.value = notifsRes.data
+    unreadCount.value = countRes.data
+  } catch (error) {
+    console.error('Failed to fetch notifications', error)
+  }
+}
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    fetchNotifications()
+  }
+}
+
+const markAllRead = async () => {
+  try {
+    await NotificationService.markAllAsRead()
+    unreadCount.value = 0
+    notifications.value.forEach(n => n.isRead = true)
+  } catch (error) {
+    console.error('Failed to mark all read', error)
+  }
+}
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(date)
+}
+
+onMounted(() => {
+  fetchNotifications()
+  // Poll every 30 seconds
+  pollingInterval = setInterval(fetchNotifications, 30000)
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
+})
+
+const handleLogout = async () => {
+  try {
+    await AuthService.logout()
+    authStore.logout() // Clear local store
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
+}
 
 const currentRouteName = computed(() => {
   const map = {
@@ -252,11 +405,20 @@ const currentRouteName = computed(() => {
   return map[route.name] || route.name
 })
 
-const menuItems = [
+const businessItems = [
   { label: 'Dükkanlar', path: '/home/shops', icon: BuildingStorefrontIcon },
-  { label: 'Çiftlikler', path: '/home/farms', icon: TrophyIcon }, // Using Trophy as placeholder for Farm
-  { label: 'Fabrikalar', path: '/home/factories', icon: BeakerIcon }, // Using Beaker as placeholder for Factory
-  { label: 'Madenler', path: '/home/mines', icon: MapIcon }, // Using Map as placeholder for Mine
-  { label: 'Bahçeler', path: '/home/gardens', icon: HomeIcon }, // Using Home as placeholder for Garden
+  { label: 'Bahçeler', path: '/home/gardens', icon: HomeIcon },
+  { label: 'Çiftlikler', path: '/home/farms', icon: TrophyIcon },
+  { label: 'Fabrikalar', path: '/home/factories', icon: BeakerIcon },
+  { label: 'Madenler', path: '/home/mines', icon: MapIcon },
+]
+
+const marketItems = [
+  { label: 'Pazar Yeri', path: '/home/market', icon: ArrowTrendingUpIcon },
+]
+
+const socialItems = [
+  { label: 'Davet Et', path: '#', icon: UsersIcon },
+  { label: 'Gazete', path: '#', icon: NewspaperIcon },
 ]
 </script>

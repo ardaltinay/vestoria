@@ -21,7 +21,7 @@ public class JwtTokenProvider {
     private final long validityInMillis;
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secret,
-                            @Value("${jwt.expiration-ms:86400000}") long validityInMillis) {
+            @Value("${jwt.expiration-ms:86400000}") long validityInMillis) {
         // secret should be at least 256 bits for HS256
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.validityInMillis = validityInMillis;
@@ -58,10 +58,12 @@ public class JwtTokenProvider {
     public List<SimpleGrantedAuthority> getRolesFromJwtToken(String token) {
         Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
 
-        // Token oluştururken rolleri "roles" key'i ile List<String> olarak koyduğunu varsayıyorum
+        // Token oluştururken rolleri "roles" key'i ile List<String> olarak koyduğunu
+        // varsayıyorum
         List<String> roles = claims.get("roles", List.class);
 
-        if (roles == null) return Collections.emptyList();
+        if (roles == null)
+            return Collections.emptyList();
 
         return roles.stream()
                 .map(SimpleGrantedAuthority::new)
