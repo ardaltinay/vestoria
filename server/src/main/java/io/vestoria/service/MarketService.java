@@ -21,6 +21,10 @@ import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.exception.InsufficientBalanceException;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +79,7 @@ public class MarketService {
   }
 
   @Transactional
+  @CacheEvict(value = "activeListings", allEntries = true)
   public MarketEntity listItem(String username, UUID itemId, ListItemRequestDto request) {
     UserEntity user = userRepository.findByUsername(username)
         .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
@@ -90,6 +95,7 @@ public class MarketService {
 
   @Transactional
   @SuppressWarnings("null")
+  @CacheEvict(value = { "globalSupply", "globalDemand", "activeListings" }, allEntries = true)
   public void buyItem(UUID userId, UUID marketItemId, BuyItemRequestDto request) {
     UserEntity buyer = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("Alıcı bulunamadı"));
@@ -131,7 +137,7 @@ public class MarketService {
         marketItem.setIsActive(false);
       }
       marketRepository.save(marketItem);
-    } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
+    } catch (ObjectOptimisticLockingFailureException e) {
       throw new BusinessRuleException(
           "Bu ürün az önce başkası tarafından satın alındı veya güncellendi.");
     }
@@ -222,6 +228,7 @@ public class MarketService {
         .marketItem(marketItem)
         .price(totalCost) // Changed to totalCost
         .amount(quantity)
+        .itemName(marketItem.getItem().getName())
         .build();
     transactionRepository.save(transaction);
 
@@ -231,6 +238,7 @@ public class MarketService {
     notificationService.createNotification(seller, notificationMessage);
   }
 
+  @Cacheable("activeListings")
   public List<MarketEntity> getActiveListings() {
     return marketRepository.findAll().stream() // In real app, use custom query for active=true
         .filter(MarketEntity::getIsActive)
@@ -274,5 +282,19 @@ public class MarketService {
     // Let's allow them to store anything for now to avoid blocking game flow until
     // we have specific categories for them.
     return true;
+  }
+
+  @Cacheable("globalSupply")
+  public long calculateGlobalSupply(String itemName) {
+    Long supply = itemRepository.sumSupplyByItemNameAndBuildingType(itemName, BuildingType.SHOP);
+    return supply != null ? supply : 0L;
+  }
+
+  @Cacheable("globalDemand")
+  public long calculateGlobalDemand(String itemName) {
+    // Sum of amounts in transactions for this item in the last 24 hours
+    java.time.LocalDateTime twentyFourHoursAgo = java.time.LocalDateTime.now().minusHours(24);
+    Integer demand = transactionRepository.sumAmountByItemNameAndCreatedAtAfter(itemName, twentyFourHoursAgo);
+    return demand != null ? demand.longValue() : 0L;
   }
 }

@@ -2,12 +2,12 @@ import api from './api';
 
 export default {
   getActiveListings() {
-    return api.get('/market/list');
+    return api.get('/market/listings', { suppressToast: true });
   },
-  listItem(itemId, quantity, price) {
-    return api.post('/market/sell', { itemId, quantity, price });
+  listItem(itemId, data) {
+    return api.post(`/market/list/${itemId}`, data)
   },
-  buyItem(marketItemId, quantity) {
-    return api.post('/market/buy', { marketItemId, quantity });
+  buyItem(marketItemId, data) {
+    return api.post(`/market/buy/${marketItemId}`, data)
   }
 };

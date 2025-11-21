@@ -27,7 +27,7 @@ const routes = [
     path: '/home',
     component: Home,
     children: [
-      { path: '', name: 'HomeMain', component: { template: '<div>Hoşgeldiniz! Ana sayfa içeriği burada.</div>' } },
+      { path: '', name: 'HomeMain', component: () => import('./pages/Dashboard.vue') },
       { path: 'shops', name: 'Shops', component: Dukkanlarim },
       { path: 'shops/new', name: 'ShopCreate', component: () => import('./pages/shops/ShopCreate.vue') },
       { path: 'shops/:id', name: 'ShopDetail', component: () => import('./pages/shops/ShopDetail.vue') },
@@ -44,6 +44,7 @@ const routes = [
       { path: 'mines/new', name: 'MineCreate', component: () => import('./pages/mines/MineCreate.vue') },
       { path: 'mines/:id', name: 'MineDetail', component: () => import('./pages/mines/MineDetail.vue') },
       { path: 'market', name: 'Marketplace', component: () => import('./pages/Marketplace.vue') },
+      { path: 'social', name: 'Social', component: () => import('./pages/Sosyal.vue') },
     ]
   }
 ];

@@ -21,7 +21,8 @@ api.interceptors.response.use(
   error => {
     const message = error.response?.data?.message || 'Bir hata oluştu';
     // Don't show toast for 401 (Unauthorized) as it might be just a session expiry redirect
-    if (error.response?.status !== 401) {
+    // Also check if the request config explicitly asked to suppress toasts
+    if (error.response?.status !== 401 && !error.config?.suppressToast) {
       addToast(message, 'error');
     }
     return Promise.reject(error);

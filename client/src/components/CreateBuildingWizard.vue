@@ -24,11 +24,11 @@
         <div class="relative pt-1 px-6 mt-4">
           <div class="flex mb-2 items-center justify-between">
             <div class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-200 bg-indigo-900">
-              Adım {{ step }} / 3
+              Adım {{ isShop ? step : step - 1 }} / {{ isShop ? 3 : 2 }}
             </div>
           </div>
           <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-700">
-            <div :style="{ width: (step / 3) * 100 + '%' }" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-300"></div>
+            <div :style="{ width: (isShop ? (step / 3) : ((step - 1) / 2)) * 100 + '%' }" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-300"></div>
           </div>
         </div>
 
@@ -144,11 +144,11 @@
                   class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
             İleri
           </button>
-          <button v-if="step > 1" @click="prevStep" type="button" 
+          <button v-if="step > (isShop ? 1 : 2)" @click="prevStep" type="button" 
                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-500 shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
             Geri
           </button>
-          <button v-if="step === 1" @click="$emit('close')" type="button" 
+          <button v-if="step === (isShop ? 1 : 2)" @click="$emit('close')" type="button" 
                   class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-500 shadow-sm px-4 py-2 bg-gray-600 text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
             İptal
           </button>
@@ -176,18 +176,25 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'create'])
 
-const step = ref(1)
+const isShop = computed(() => props.buildingType === 'SHOP')
+const step = ref(isShop.value ? 1 : 2)
 const selectedSubType = ref(null)
 const selectedTier = ref(null)
 const buildingConfigs = ref([])
 const loading = ref(true)
 
+const productionTypes = ref([])
+
 onMounted(async () => {
   try {
-    const response = await BuildingService.getBuildingConfigs()
-    buildingConfigs.value = response.data
+    const [configRes, typesRes] = await Promise.all([
+      BuildingService.getBuildingConfigs(),
+      BuildingService.getProductionTypes()
+    ])
+    buildingConfigs.value = configRes.data
+    productionTypes.value = typesRes.data
   } catch (error) {
-    console.error('Failed to fetch building configs:', error)
+    console.error('Failed to fetch building data:', error)
   } finally {
     loading.value = false
   }
@@ -209,35 +216,7 @@ const buildingTypeName = computed(() => {
 })
 
 const subTypeOptions = computed(() => {
-  if (props.buildingType === 'SHOP') {
-    return [
-      { value: 'MARKET', label: 'Market', description: 'Temel gıda ve ihtiyaç malzemeleri.' },
-      { value: 'CLOTHING', label: 'Giyim Mağazası', description: 'Moda ve tekstil ürünleri.' },
-      { value: 'GREENGROCER', label: 'Manav', description: 'Taze meyve ve sebze.' },
-      { value: 'JEWELER', label: 'Kuyumcu', description: 'Değerli takı ve aksesuarlar.' }
-    ]
-  } else if (props.buildingType === 'FARM') {
-    return [
-      { value: 'LIVESTOCK', label: 'Hayvancılık', description: 'Et ve süt ürünleri üretimi.' },
-      { value: 'WHEAT_FIELD', label: 'Buğday Tarlası', description: 'Temel tahıl üretimi.' }
-    ]
-  } else if (props.buildingType === 'FACTORY') {
-    return [
-      { value: 'TEXTILE', label: 'Tekstil Fabrikası', description: 'Kumaş ve giyim üretimi.' },
-      { value: 'STEEL_FACTORY', label: 'Çelik Fabrikası', description: 'Metal işleme ve üretim.' }
-    ]
-  } else if (props.buildingType === 'MINE') {
-    return [
-      { value: 'IRON_MINE', label: 'Demir Madeni', description: 'Demir cevheri çıkarımı.' },
-      { value: 'COAL_MINE', label: 'Kömür Madeni', description: 'Enerji için kömür çıkarımı.' }
-    ]
-  } else if (props.buildingType === 'GARDEN') {
-    return [
-      { value: 'VEGETABLE_GARDEN', label: 'Sebze Bahçesi', description: 'Mevsimlik sebze yetiştiriciliği.' },
-      { value: 'FRUIT_ORCHARD', label: 'Meyve Bahçesi', description: 'Ağaç meyveleri üretimi.' }
-    ]
-  }
-  return [{ value: 'GENERIC', label: 'Standart', description: 'Standart üretim tesisi.' }]
+  return productionTypes.value.filter(t => t.parentType === props.buildingType)
 })
 
 const canProceed = computed(() => {
@@ -259,7 +238,7 @@ const nextStep = () => {
 }
 
 const prevStep = () => {
-  if (step.value > 1) step.value--
+  if (step.value > (isShop.value ? 1 : 2)) step.value--
 }
 
 const calculateTotalCost = () => {

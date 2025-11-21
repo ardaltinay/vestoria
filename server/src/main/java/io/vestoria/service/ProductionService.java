@@ -87,22 +87,7 @@ public class ProductionService {
     if (building.getSubType() != null && building.getSubType().getProducedItemName() != null) {
       return building.getSubType().getProducedItemName();
     }
-    return getDefaultItemForType(building.getType());
-  }
-
-  private String getDefaultItemForType(BuildingType type) {
-    switch (type) {
-      case GARDEN:
-        return "Elma";
-      case FARM:
-        return "Buğday";
-      case FACTORY:
-        return "Kumaş";
-      case MINE:
-        return "Demir";
-      default:
-        return null;
-    }
+    return null; // No production if no SubType selected
   }
 
   private boolean consumeRawMaterials(BuildingEntity building, String productName) {

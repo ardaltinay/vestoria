@@ -20,7 +20,9 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "market_transactions", indexes = {
         @Index(name = "idx_transactions_buyer_id", columnList = "buyer_id"),
-        @Index(name = "idx_transactions_market_item_id", columnList = "market_item_id")
+        @Index(name = "idx_transactions_market_item_id", columnList = "market_item_id"),
+        @Index(name = "idx_transactions_item_name", columnList = "itemName"),
+        @Index(name = "idx_transactions_created_at", columnList = "createdAt")
 })
 @Getter
 @Setter
@@ -36,6 +38,8 @@ public class TransactionEntity extends BaseEntity {
     private BigDecimal price;
 
     private Integer amount;
+
+    private String itemName;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "buyer_id")

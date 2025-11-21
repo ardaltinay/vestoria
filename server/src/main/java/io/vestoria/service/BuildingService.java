@@ -14,6 +14,7 @@ import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.dto.response.BuildingConfigDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +28,19 @@ import java.util.ArrayList;
 public class BuildingService {
 
     private final BuildingRepository buildingRepository;
+    @lombok.Getter
     private final UserRepository userRepository;
 
     @Transactional
     @SuppressWarnings("null")
     public BuildingEntity createBuilding(UserEntity owner, BuildingType type, BuildingTier tier,
             BuildingSubType subType) {
+
+        // Validation: SHOP requires SubType
+        if (type == BuildingType.SHOP && subType == null) {
+            throw new BusinessRuleException("Dükkan açarken türünü (Market, Kuyumcu vb.) seçmelisiniz.");
+        }
+
         // Calculate cost based on tier
         BigDecimal cost = getBuildingCost(type, tier, 1);
 
@@ -48,7 +56,7 @@ public class BuildingService {
                 .owner(owner)
                 .type(type)
                 .tier(tier)
-                .subType(subType)
+                .subType(subType) // Can be null for non-SHOP
                 .level(1)
                 .productionRate(getProductionRate(type, tier, 1))
                 .maxSlots(getMaxSlots(tier))
@@ -112,6 +120,27 @@ public class BuildingService {
         return buildingRepository.save(building);
     }
 
+    @Transactional
+    public BuildingEntity setProduction(UUID buildingId, UUID userId, BuildingSubType productionType) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
+
+        if (!building.getOwner().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("Bu bina size ait değil.");
+        }
+
+        if (building.getType() == BuildingType.SHOP) {
+            throw new BusinessRuleException("Dükkanların üretim türü değiştirilemez.");
+        }
+
+        if (productionType.getParentType() != building.getType()) {
+            throw new BusinessRuleException("Seçilen üretim türü bu bina tipi için uygun değil.");
+        }
+
+        building.setSubType(productionType);
+        return buildingRepository.save(building);
+    }
+
     public List<BuildingEntity> getUserBuildings(String username) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
@@ -122,6 +151,7 @@ public class BuildingService {
         return buildingRepository.findByOwnerId(userId);
     }
 
+    @Cacheable("buildingConfigs")
     public List<BuildingConfigDto> getBuildingConfigs() {
         List<BuildingConfigDto> configs = new ArrayList<>();
         for (BuildingType type : BuildingType.values()) {
@@ -161,14 +191,6 @@ public class BuildingService {
             default:
                 baseCost = BigDecimal.valueOf(25000);
         }
-
-        // Adjust for Tier (Additive based on user request pattern)
-        // User Request:
-        // Shop: 25, 35, 50 (+10, +25)
-        // Garden: 35, 45, 60 (+10, +25)
-        // Farm: 45, 55, 70 (+10, +25)
-        // Factory: 55, 65, 80 (+10, +25)
-        // Mine: 65, 75, 90 (+10, +25)
 
         if (tier != null) {
             switch (tier) {

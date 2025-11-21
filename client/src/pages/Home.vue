@@ -123,18 +123,27 @@
         <div>
           <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Sosyal</div>
           <div class="space-y-1">
-            <a 
-              v-for="item in socialItems"
-              :key="item.label"
-              :href="item.path" 
-              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 group"
+            <RouterLink 
+              v-for="item in socialItems" 
+              :key="item.path" 
+              :to="item.path"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
+              :class="[
+                $route.path.startsWith(item.path) 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              ]"
+              @click="isSidebarOpen = false"
             >
               <component 
                 :is="item.icon" 
-                class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors"
+                class="w-5 h-5 transition-colors"
+                :class="[
+                  $route.path.startsWith(item.path) ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'
+                ]"
               />
               {{ item.label }}
-            </a>
+            </RouterLink>
           </div>
         </div>
 
@@ -171,14 +180,19 @@
           <div class="relative">
             <button 
               @click="toggleNotifications"
-              class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
+              aria-label="Notifications"
+              class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors relative"
             >
               <BellIcon class="w-6 h-6" />
               <span v-if="unreadCount > 0" class="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
             </button>
 
             <!-- Notification Dropdown -->
-            <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden">
+            <div
+              v-if="showNotifications"
+              ref="notificationDropdown"
+              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 overflow-hidden"
+            >
               <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-sm font-bold text-slate-700">Bildirimler</h3>
                 <button @click="markAllRead" class="text-xs text-primary-600 hover:text-primary-700 font-medium">Tümünü Okundu Yap</button>
@@ -208,13 +222,14 @@
           <div class="relative">
             <button 
               @click="showUserMenu = !showUserMenu"
+              aria-label="User Menu"
               class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900"
             >
               <span class="hidden sm:block">Hesabım</span>
               <ChevronDownIcon class="w-4 h-4 text-slate-400" />
             </button>
 
-            <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden py-1">
+            <div v-if="showUserMenu" ref="userMenuDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden py-1">
               <button 
                 @click="handleLogout"
                 class="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
@@ -230,87 +245,6 @@
       <!-- Main Content Area -->
       <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
         <div class="max-w-7xl mx-auto">
-          <div v-if="$route.name === 'HomeMain'" class="space-y-6">
-            <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-xl">
-              <!-- Background Pattern & Gradients -->
-              <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-primary-50/30"></div>
-              <div class="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-primary-100/40 rounded-full blur-3xl animate-pulse"></div>
-              <div class="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-emerald-100/40 rounded-full blur-3xl"></div>
-              
-              <!-- Content -->
-              <div class="relative z-10 p-8 sm:p-12">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                  <div>
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-medium text-slate-600 mb-4">
-                      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Piyasalar Açık
-                    </div>
-                    <h1 class="text-3xl sm:text-4xl font-display font-bold mb-2 tracking-tight text-slate-900">
-                      Hoş geldiniz, <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400">{{ username }}</span>
-                    </h1>
-                    <p class="text-slate-500 text-lg max-w-xl leading-relaxed">
-                      İmparatorluğunuz büyümeye devam ediyor. Bugün yeni fırsatları değerlendirmek için harika bir gün.
-                    </p>
-                  </div>
-                  
-                  <!-- Quick Action Button -->
-                  <div class="flex flex-col gap-3 min-w-[160px]">
-                    <button 
-                      @click="handleViewReports"
-                      class="group relative overflow-hidden bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all transform hover:-translate-y-0.5"
-                    >
-                      <span class="relative z-10 flex items-center justify-center gap-2">
-                        Raporları İncele
-                        <ArrowRightIcon class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </span>
-                    </button>
-                    <button 
-                      @click="handleNewInvestment"
-                      class="px-6 py-3 rounded-xl font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors border border-slate-200 bg-white"
-                    >
-                      Yeni Yatırım Yap
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Stats Row -->
-                <div class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-slate-100">
-                  <div>
-                    <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Günlük Kazanç</div>
-                    <div class="text-2xl font-bold text-slate-900">{{ dashboardStats.dailyEarnings ? '₺' + dashboardStats.dailyEarnings : '-' }}</div>
-                  </div>
-                  <div>
-                    <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Aktif İşletme</div>
-                    <div class="text-2xl font-bold text-slate-900">{{ dashboardStats.activeBusinesses !== null ? dashboardStats.activeBusinesses : '-' }}</div>
-                  </div>
-                  <div>
-                    <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Pazar Payı</div>
-                    <div class="text-2xl font-bold text-emerald-600 flex items-center gap-1">
-                      {{ dashboardStats.marketShare ? '%' + dashboardStats.marketShare.toFixed(1) : '-' }}
-                      <ArrowTrendingUpIcon v-if="dashboardStats.marketShare > 0" class="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dashboard Widgets Placeholder -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <!-- Example Widgets -->
-               <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                 <h3 class="font-bold text-slate-800 mb-4">Son Aktiviteler</h3>
-                 <div class="space-y-4">
-                   <div v-if="notifications.length === 0" class="text-slate-400 text-sm">Henüz bir aktivite yok.</div>
-                   <div v-for="notification in notifications.slice(0, 3)" :key="notification.id" class="flex items-center gap-3 text-sm">
-                     <div class="w-2 h-2 rounded-full" :class="notification.isRead ? 'bg-slate-300' : 'bg-emerald-500'"></div>
-                     <span class="text-slate-600 truncate">{{ notification.message }}</span>
-                     <span class="ml-auto text-slate-400 text-xs whitespace-nowrap">{{ new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
-                   </div>
-                 </div>
-               </div>
-            </div>
-          </div>
-          
           <RouterView v-slot="{ Component }">
             <transition name="fade" mode="out-in">
               <component :is="Component" />
@@ -319,35 +253,28 @@
         </div>
       </main>
     </div>
-
-    <!-- Create Wizard -->
-    <CreateBuildingWizard 
-      v-if="showWizard" 
-      :building-type="wizardType" 
-      :base-cost="25000"
-      @close="showWizard = false"
-      @create="handleCreate"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+
 import { 
-  HomeIcon, 
-  BuildingStorefrontIcon, 
-  TrophyIcon, 
-  BeakerIcon, 
-  MapIcon,
+  BuildingStorefrontIcon,
   NewspaperIcon,
-  UsersIcon,
   Bars3Icon,
   BellIcon,
   ChevronRightIcon,
   ChevronDownIcon,
   ArrowRightIcon,
-  ArrowTrendingUpIcon
+  WrenchScrewdriverIcon,
+  ShoppingCartIcon,
+  SunIcon,
+  Cog6ToothIcon,
+  SparklesIcon,
+  ArchiveBoxIcon,
+  TruckIcon
 } from '@heroicons/vue/24/outline'
 import Logo from '../components/Logo.vue'
 import AuthService from '../services/AuthService'
@@ -356,6 +283,7 @@ import { useAuthStore } from '../stores/authStore'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
 const isSidebarOpen = ref(false)
 const username = computed(() => authStore.user?.username || 'Oyuncu')
 const balance = computed(() => authStore.user?.balance || 0)
@@ -369,91 +297,16 @@ const xpPercentage = computed(() => {
 
 // Notifications
 import NotificationService from '../services/NotificationService'
-import { onMounted, onUnmounted } from 'vue'
-
 import UserService from '../services/UserService'
 import { useToast } from '../composables/useToast'
-import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 
 const showNotifications = ref(false)
 const showUserMenu = ref(false)
 const notifications = ref([])
 const unreadCount = ref(0)
-const dashboardStats = ref({})
-const showWizard = ref(false)
-const wizardType = ref('SHOP') // Default
 const { addToast } = useToast()
 
 let pollingInterval = null
-
-const fetchDashboardStats = async () => {
-  try {
-    const response = await UserService.getDashboardStats()
-    dashboardStats.value = response.data
-  } catch (error) {
-    console.error('Failed to fetch dashboard stats', error)
-  }
-}
-
-const handleNewInvestment = () => {
-  wizardType.value = 'SHOP' // Default or ask user? Let's default to Shop for now
-  showWizard.value = true
-}
-
-const handleViewReports = () => {
-  addToast('Detaylı raporlar çok yakında!', 'info')
-}
-
-const handleCreate = async (payload) => {
-  // The wizard emits create, but the store call happens inside the specific page usually.
-  // But here we are on Home. We need to know which store to call based on type.
-  // Actually, the pages (Shops, Farms etc) handle the creation logic via the store.
-  // If we open the wizard here, we need to handle the creation.
-  // Let's import the stores dynamically or just use a switch.
-  // OR, simpler: Redirect to the specific page and open wizard there?
-  // No, the user wants to do it from here.
-  
-  // Let's implement a simple switch to call the right store.
-  // We need to import stores.
-  // Ideally, we should refactor creation logic to a service, but for now:
-  
-  try {
-    let store;
-    switch(payload.type) {
-        case 'SHOP':
-            const { useShopsStore } = await import('../stores/shopsStore');
-            store = useShopsStore();
-            break;
-        case 'FARM':
-            const { useFarmsStore } = await import('../stores/farmsStore');
-            store = useFarmsStore();
-            break;
-        case 'FACTORY':
-            const { useFactoriesStore } = await import('../stores/factoriesStore');
-            store = useFactoriesStore();
-            break;
-        case 'MINE':
-            const { useMinesStore } = await import('../stores/minesStore');
-            store = useMinesStore();
-            break;
-        case 'GARDEN':
-            const { useGardensStore } = await import('../stores/gardensStore');
-            store = useGardensStore();
-            break;
-    }
-    
-    if (store) {
-        await store.create(payload)
-        addToast('Yatırım başarıyla gerçekleştirildi!', 'success')
-        showWizard.value = false
-        fetchDashboardStats() // Refresh stats
-        // Optionally redirect to the relevant page
-    }
-  } catch (error) {
-     // Error handled globally or by store
-     console.error(error)
-  }
-}
 
 const fetchNotifications = async () => {
   try {
@@ -490,17 +343,33 @@ const formatDate = (dateString) => {
   return new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
+const notificationDropdown = ref(null)
+const userMenuDropdown = ref(null)
+
+const handleClickOutside = (event) => {
+  // Close Notifications
+  if (showNotifications.value && notificationDropdown.value && !notificationDropdown.value.contains(event.target) && !event.target.closest('button[aria-label="Notifications"]')) {
+    showNotifications.value = false
+  }
+  // Close User Menu
+  if (showUserMenu.value && userMenuDropdown.value && !userMenuDropdown.value.contains(event.target) && !event.target.closest('button[aria-label="User Menu"]')) {
+    showUserMenu.value = false
+  }
+}
+
 onMounted(() => {
   fetchNotifications()
-  fetchDashboardStats()
   // Poll every 30 seconds for notifications only
   pollingInterval = setInterval(() => {
     fetchNotifications()
   }, 30000)
+  
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 const handleLogout = async () => {
@@ -519,25 +388,26 @@ const currentRouteName = computed(() => {
     'Farms': 'Çiftlikler',
     'Factories': 'Fabrikalar',
     'Mines': 'Madenler',
-    'Gardens': 'Bahçeler'
+    'Gardens': 'Bahçeler',
+    'Marketplace': 'Pazar Yeri',
+    'Social': 'Sosyal'
   }
   return map[route.name] || route.name
 })
 
 const businessItems = [
   { label: 'Dükkanlar', path: '/home/shops', icon: BuildingStorefrontIcon },
-  { label: 'Bahçeler', path: '/home/gardens', icon: HomeIcon },
-  { label: 'Çiftlikler', path: '/home/farms', icon: TrophyIcon },
-  { label: 'Fabrikalar', path: '/home/factories', icon: BeakerIcon },
-  { label: 'Madenler', path: '/home/mines', icon: MapIcon },
+  { label: 'Bahçeler', path: '/home/gardens', icon: ArchiveBoxIcon },
+  { label: 'Çiftlikler', path: '/home/farms', icon: TruckIcon },
+  { label: 'Fabrikalar', path: '/home/factories', icon: Cog6ToothIcon },
+  { label: 'Madenler', path: '/home/mines', icon: WrenchScrewdriverIcon },
 ]
 
 const marketItems = [
-  { label: 'Pazar Yeri', path: '/home/market', icon: ArrowTrendingUpIcon },
+  { label: 'Pazar Yeri', path: '/home/market', icon: ShoppingCartIcon },
 ]
 
 const socialItems = [
-  { label: 'Davet Et', path: '#', icon: UsersIcon },
-  { label: 'Gazete', path: '#', icon: NewspaperIcon },
+  { label: 'Gazete', path: '/home/social', icon: NewspaperIcon },
 ]
 </script>

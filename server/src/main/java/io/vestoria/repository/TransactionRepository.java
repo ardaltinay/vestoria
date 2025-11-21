@@ -16,4 +16,8 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
   @Query("SELECT SUM(t.price) FROM TransactionEntity t WHERE t.seller = :seller AND t.createdAt > :date")
   BigDecimal sumEarningsBySellerAndCreatedAtAfter(@Param("seller") UserEntity seller,
       @Param("date") LocalDateTime date);
+
+  @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.itemName = :itemName AND t.createdAt > :date")
+  Integer sumAmountByItemNameAndCreatedAtAfter(@Param("itemName") String itemName,
+      @Param("date") LocalDateTime date);
 }

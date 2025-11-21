@@ -1,6 +1,7 @@
 package io.vestoria.entity;
 
 import io.vestoria.enums.BuildingStatus;
+import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.BuildingTier;
 import jakarta.persistence.CascadeType;
@@ -22,7 +23,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
-@Table(name = "buildings")
+@Table(name = "buildings", indexes = {
+        @jakarta.persistence.Index(name = "idx_buildings_type", columnList = "type"),
+        @jakarta.persistence.Index(name = "idx_buildings_owner_id", columnList = "owner_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,7 +41,7 @@ public class BuildingEntity extends BaseEntity {
     private BuildingTier tier;
 
     @Enumerated(EnumType.STRING)
-    private io.vestoria.enums.BuildingSubType subType;
+    private BuildingSubType subType;
 
     private Integer level;
 

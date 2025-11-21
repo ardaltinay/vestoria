@@ -4,9 +4,14 @@ export default {
   createBuilding(type, tier, subType) {
     return api.post('/build/create', { type, tier, subType });
   },
-  upgradeBuilding(buildingId) {
+  upgrade(buildingId) {
     return api.post(`/build/upgrade/${buildingId}`);
   },
+
+  setProduction(buildingId, productionType) {
+    return api.post(`/build/production/${buildingId}`, { productionType });
+  },
+
   getUserBuildings() {
     // Assuming we might add this endpoint or use a user endpoint that returns buildings
     // For now, let's assume the backend has /build/my-buildings or similar, 
@@ -19,5 +24,8 @@ export default {
   },
   getBuildingConfigs() {
     return api.get('/build/config');
+  },
+  getProductionTypes() {
+    return api.get('/build/production-types');
   }
 };

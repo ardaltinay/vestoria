@@ -21,7 +21,8 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "items", indexes = {
-        @Index(name = "idx_items_name", columnList = "name")
+        @Index(name = "idx_items_name", columnList = "name"),
+        @Index(name = "idx_items_building_id", columnList = "building_id")
 })
 @Getter
 @Setter

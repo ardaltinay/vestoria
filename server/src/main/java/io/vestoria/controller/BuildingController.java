@@ -33,9 +33,33 @@ public class BuildingController {
         return ResponseEntity.ok(buildingService.upgradeBuilding(buildingId, principal.getName()));
     }
 
+    @PostMapping("/production/{buildingId}")
+    public ResponseEntity<?> setProduction(@PathVariable UUID buildingId,
+            @RequestBody io.vestoria.dto.request.SetProductionRequestDto request, Principal principal) {
+        io.vestoria.entity.UserEntity user = buildingService.getUserRepository().findByUsername(principal.getName())
+                .orElseThrow(() -> new io.vestoria.exception.ResourceNotFoundException("Kullanıcı bulunamadı"));
+        return ResponseEntity.ok(buildingService.setProduction(buildingId, user.getId(), request.getProductionType()));
+    }
+
     @GetMapping("/list")
     public ResponseEntity<?> list(Principal principal) {
         return ResponseEntity.ok(buildingService.getUserBuildings(principal.getName()));
+    }
+
+    @GetMapping("/production-types")
+    public ResponseEntity<?> getProductionTypes() {
+        java.util.List<io.vestoria.dto.response.BuildingProductionTypeDto> types = new java.util.ArrayList<>();
+        for (io.vestoria.enums.BuildingSubType subType : io.vestoria.enums.BuildingSubType.values()) {
+            if (subType == io.vestoria.enums.BuildingSubType.GENERIC)
+                continue;
+            types.add(io.vestoria.dto.response.BuildingProductionTypeDto.builder()
+                    .value(subType.name())
+                    .label(subType.getLabel())
+                    .description(subType.getDescription())
+                    .parentType(subType.getParentType())
+                    .build());
+        }
+        return ResponseEntity.ok(types);
     }
 
     @GetMapping("/config")
