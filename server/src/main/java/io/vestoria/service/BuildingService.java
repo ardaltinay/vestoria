@@ -12,7 +12,9 @@ import io.vestoria.exception.InsufficientBalanceException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.exception.BusinessRuleException;
+import io.vestoria.converter.BuildingConverter;
 import io.vestoria.dto.response.BuildingConfigDto;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class BuildingService {
     private final BuildingRepository buildingRepository;
     @lombok.Getter
     private final UserRepository userRepository;
+    private final BuildingConverter buildingConverter;
 
     @Transactional
     @SuppressWarnings("null")
@@ -121,7 +124,8 @@ public class BuildingService {
     }
 
     @Transactional
-    public BuildingEntity setProduction(UUID buildingId, UUID userId, BuildingSubType productionType) {
+    public BuildingEntity setProduction(@NonNull UUID buildingId, @NonNull UUID userId,
+            @NonNull BuildingSubType productionType) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
 
@@ -156,14 +160,13 @@ public class BuildingService {
         List<BuildingConfigDto> configs = new ArrayList<>();
         for (BuildingType type : BuildingType.values()) {
             for (BuildingTier tier : BuildingTier.values()) {
-                configs.add(BuildingConfigDto.builder()
-                        .type(type)
-                        .tier(tier)
-                        .cost(getBuildingCost(type, tier, 1))
-                        .productionRate(getProductionRate(type, tier, 1))
-                        .maxStock(getStorageCapacity(type, tier, 1))
-                        .maxSlots(getMaxSlots(tier))
-                        .build());
+                configs.add(buildingConverter.toConfigDto(
+                        type,
+                        tier,
+                        getBuildingCost(type, tier, 1),
+                        getProductionRate(type, tier, 1),
+                        getStorageCapacity(type, tier, 1),
+                        getMaxSlots(tier)));
             }
         }
         return configs;

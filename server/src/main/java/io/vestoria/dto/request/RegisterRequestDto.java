@@ -2,20 +2,22 @@ package io.vestoria.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class RegisterRequestDto {
-  @NotBlank(message = "Username is required")
-  @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
+  @NotBlank(message = "Kullanıcı adı zorunludur")
+  @Size(min = 4, max = 20, message = "Kullanıcı adı 4-20 karakter arasında olmalıdır")
   private String username;
 
-  @NotBlank(message = "Password is required")
-  @Size(min = 6, message = "Password must be at least 6 characters")
+  @NotBlank(message = "Şifre zorunludur")
+  @Size(min = 8, message = "Şifre en az 8 karakter olmalıdır")
+  @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!._,-]).{8,}$", message = "Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir")
   private String password;
 
-  @NotBlank(message = "Email is required")
-  @Email(message = "Email should be valid")
+  @NotBlank(message = "E-posta zorunludur")
+  @Email(message = "Geçerli bir e-posta adresi giriniz")
   private String email;
 }

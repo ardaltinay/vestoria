@@ -1,14 +1,18 @@
 package io.vestoria.service;
 
+import io.vestoria.converter.NotificationConverter;
 import io.vestoria.dto.response.NotificationDto;
 import io.vestoria.entity.NotificationEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.repository.NotificationRepository;
 import io.vestoria.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -22,6 +26,7 @@ public class NotificationService {
 
   private final NotificationRepository notificationRepository;
   private final UserRepository userRepository;
+  private final NotificationConverter notificationConverter;
 
   @Transactional
   @SuppressWarnings("null")
@@ -40,7 +45,7 @@ public class NotificationService {
         .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
     return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
-        .map(this::mapToDto)
+        .map(notificationConverter::toDto)
         .collect(Collectors.toList());
   }
 
@@ -75,12 +80,10 @@ public class NotificationService {
     notificationRepository.saveAll(notifications);
   }
 
-  private NotificationDto mapToDto(NotificationEntity entity) {
-    return NotificationDto.builder()
-        .id(entity.getId())
-        .message(entity.getMessage())
-        .isRead(entity.isRead())
-        .createdAt(entity.getCreatedTime())
-        .build();
+  @Scheduled(cron = "0 0 0 * * ?") // Every midnight
+  @Transactional
+  public void cleanupOldNotifications() {
+    LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+    notificationRepository.deleteByCreatedTimeBefore(thirtyDaysAgo);
   }
 }

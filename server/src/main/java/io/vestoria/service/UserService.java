@@ -1,5 +1,6 @@
 package io.vestoria.service;
 
+import io.vestoria.converter.UserConverter;
 import io.vestoria.dto.response.DashboardStatsDto;
 import io.vestoria.entity.UserEntity;
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ public class UserService {
   private final NotificationService notificationService;
   private final TransactionRepository transactionRepository;
   private final BuildingRepository buildingRepository;
+  private final UserConverter userConverter;
 
   @Transactional
   public void addXp(UserEntity user, long amount) {
@@ -60,10 +62,10 @@ public class UserService {
       marketShare = ((double) activeBusinesses / totalActiveBusinesses) * 100;
     }
 
-    return DashboardStatsDto.builder()
-        .dailyEarnings(dailyEarnings)
-        .activeBusinesses((int) activeBusinesses)
-        .marketShare(marketShare)
-        .build();
+    if (totalActiveBusinesses > 0) {
+      marketShare = ((double) activeBusinesses / totalActiveBusinesses) * 100;
+    }
+
+    return userConverter.toDashboardStatsDto(dailyEarnings, (int) activeBusinesses, marketShare);
   }
 }

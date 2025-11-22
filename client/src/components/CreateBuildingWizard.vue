@@ -136,8 +136,10 @@
         <!-- Footer -->
         <div class="bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
           <button v-if="step === 3" @click="confirmCreation" type="button" 
-                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
-            Oluştur
+                  :disabled="isSubmitting"
+                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <span v-if="isSubmitting" class="mr-2">İşleniyor...</span>
+            <span v-else>Oluştur</span>
           </button>
           <button v-if="step < 3" @click="nextStep" type="button" 
                   :disabled="!canProceed"
@@ -182,6 +184,7 @@ const selectedSubType = ref(null)
 const selectedTier = ref(null)
 const buildingConfigs = ref([])
 const loading = ref(true)
+const isSubmitting = ref(false)
 
 const productionTypes = ref([])
 
@@ -282,12 +285,22 @@ const formatMoney = (amount) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount)
 }
 
-const confirmCreation = () => {
-  emit('create', {
-    type: props.buildingType,
-    subType: selectedSubType.value,
-    tier: selectedTier.value,
-    cost: calculateTotalCost()
-  })
+const confirmCreation = async () => {
+  if (isSubmitting.value) return
+  
+  isSubmitting.value = true
+  try {
+    emit('create', {
+      type: props.buildingType,
+      subType: selectedSubType.value,
+      tier: selectedTier.value,
+      cost: calculateTotalCost()
+    })
+  } finally {
+    // We don't set isSubmitting to false here because the parent component will likely close the modal
+    // or handle the error. If we set it to false immediately, the user might double click before the parent reacts.
+    // Ideally, the parent should control the loading state, but for now, this prevents immediate double clicks.
+    setTimeout(() => { isSubmitting.value = false }, 2000)
+  }
 }
 </script>

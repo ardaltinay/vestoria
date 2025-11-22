@@ -55,7 +55,7 @@
           </div>
           <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
             <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prestij</div>
-            <div class="text-sm font-bold text-amber-500">★ 24</div>
+            <div class="text-sm font-bold text-amber-500">★ 0</div>
           </div>
         </div>
       </div>

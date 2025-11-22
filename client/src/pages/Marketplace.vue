@@ -53,9 +53,11 @@
 
         <button 
           @click="buyItem(listing)"
-          class="w-full bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
+          :disabled="buyingId === listing.id"
+          class="w-full bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Satın Al
+          <span v-if="buyingId === listing.id">İşleniyor...</span>
+          <span v-else>Satın Al</span>
         </button>
       </div>
     </div>
@@ -151,10 +153,11 @@
                 </button>
                 <button 
                   type="submit"
-                  :disabled="!isValidListing"
+                  :disabled="!isValidListing || isListing"
                   class="flex-1 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-600/20"
                 >
-                  İlanı Yayınla
+                  <span v-if="isListing">Yayınlanıyor...</span>
+                  <span v-else>İlanı Yayınla</span>
                 </button>
               </div>
             </form>
@@ -176,6 +179,8 @@ const listings = ref([])
 const inventory = ref([])
 const showSellModal = ref(false)
 const loadingInventory = ref(false)
+const isListing = ref(false)
+const buyingId = ref(null)
 const selectedItem = ref(null)
 const listingForm = ref({
   quantity: 1,
@@ -222,9 +227,10 @@ const fetchInventory = async () => {
 }
 
 const handleCreateListing = async () => {
-  if (!isValidListing.value) return
+  if (!isValidListing.value || isListing.value) return
 
   try {
+    isListing.value = true
     await MarketService.listItem(selectedItem.value.id, {
       itemId: selectedItem.value.id, // Redundant but required by DTO
       quantity: listingForm.value.quantity,
@@ -239,16 +245,23 @@ const handleCreateListing = async () => {
     listingForm.value = { quantity: 1, price: 10 }
   } catch (error) {
     console.error('Listing creation failed:', error)
+  } finally {
+    isListing.value = false
   }
 }
 
 const buyItem = async (listing) => {
+  if (buyingId.value) return
+  
   try {
+    buyingId.value = listing.id
     await MarketService.buyItem(listing.id, { quantity: 1 }) // Assuming buying 1 for now
     addToast('Satın alma başarılı!', 'success')
     fetchListings()
   } catch (error) {
     // Error handled globally
+  } finally {
+    buyingId.value = null
   }
 }
 

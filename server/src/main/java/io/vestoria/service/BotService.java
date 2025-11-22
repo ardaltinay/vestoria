@@ -37,9 +37,7 @@ public class BotService {
   @Transactional
   @CacheEvict(value = { "globalSupply", "globalDemand" }, allEntries = true)
   public void buyFromShops() {
-    List<BuildingEntity> shops = buildingRepository.findAll().stream()
-        .filter(b -> b.getType() == BuildingType.SHOP)
-        .toList();
+    List<BuildingEntity> shops = buildingRepository.findAllShopsWithItems();
 
     for (BuildingEntity shop : shops) {
       List<ItemEntity> itemsForSale = shop.getItems();

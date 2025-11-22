@@ -17,10 +17,13 @@
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">Kullanıcı Adı</label>
             <input 
+              v-model="form.username"
               type="text" 
               class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+              :class="{ 'border-red-500 focus:ring-red-500 focus:border-red-500': errors.username }"
               placeholder="Girişimci adınız"
             />
+            <p v-if="errors.username" class="text-xs text-red-500 mt-1">{{ errors.username }}</p>
           </div>
           
           <div>
@@ -29,13 +32,16 @@
               <a href="#" class="text-xs font-medium text-primary-600 hover:text-primary-700">Şifremi Unuttum?</a>
             </div>
             <input 
+              v-model="form.password"
               type="password" 
               class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+              :class="{ 'border-red-500 focus:ring-red-500 focus:border-red-500': errors.password }"
               placeholder="••••••••"
             />
+            <p v-if="errors.password" class="text-xs text-red-500 mt-1">{{ errors.password }}</p>
           </div>
 
-          <AppButton variant="primary" block size="lg" type="submit" class="mt-6">
+          <AppButton variant="primary" block size="lg" type="submit" class="mt-6" :loading="loading">
             Giriş Yap
           </AppButton>
         </form>
@@ -57,15 +63,61 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import AppButton from '../components/AppButton.vue'
 import Logo from '../components/Logo.vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import { useRouter } from 'vue-router'
+import AuthService from '../services/AuthService'
+import { useAuthStore } from '../stores/authStore'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const { addToast } = useToast()
 
-function handleLogin() {
-  // Mock login
-  router.push('/home')
+const form = ref({
+  username: '',
+  password: ''
+})
+
+const errors = ref({
+  username: '',
+  password: ''
+})
+
+const loading = ref(false)
+
+const validate = () => {
+  let isValid = true
+  errors.value = { username: '', password: '' }
+
+  if (!form.value.username) {
+    errors.value.username = 'Kullanıcı adı zorunludur'
+    isValid = false
+  }
+
+  if (!form.value.password) {
+    errors.value.password = 'Şifre zorunludur'
+    isValid = false
+  }
+
+  return isValid
+}
+
+async function handleLogin() {
+  if (!validate()) return
+
+  try {
+    loading.value = true
+    const response = await AuthService.login(form.value)
+    authStore.login(response.data)
+    router.push('/home')
+  } catch (error) {
+    console.error('Login failed:', error)
+    addToast('Giriş başarısız. Kullanıcı adı veya şifre hatalı.', 'error')
+  } finally {
+    loading.value = false
+  }
 }
 </script>

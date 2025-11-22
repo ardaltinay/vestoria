@@ -240,9 +240,7 @@ public class MarketService {
 
   @Cacheable("activeListings")
   public List<MarketEntity> getActiveListings() {
-    return marketRepository.findAll().stream() // In real app, use custom query for active=true
-        .filter(MarketEntity::getIsActive)
-        .toList();
+    return marketRepository.findAllActiveWithDetails();
   }
 
   private boolean isCompatible(BuildingEntity building, ItemCategory category) {

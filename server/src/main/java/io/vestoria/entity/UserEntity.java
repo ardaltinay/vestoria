@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
-@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = {"username", "email"})})
+@Table(name = "users", uniqueConstraints = { @UniqueConstraint(columnNames = { "username", "email" }) })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,6 +36,10 @@ public class UserEntity extends BaseEntity {
     private Integer level;
 
     private Long xp;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean isAdmin = false;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BuildingEntity> buildings;

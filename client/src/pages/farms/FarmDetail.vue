@@ -60,7 +60,10 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useFarmsStore } from '../../stores/farmsStore'
 import BuildingService from '../../services/BuildingService'
 
+import { useToast } from '../../composables/useToast'
+
 const route = useRoute()
+const { addToast } = useToast()
 const store = useFarmsStore()
 const item = ref(null)
 
@@ -91,7 +94,7 @@ async function selectProduction(type) {
     item.value = store.getById(route.params.id) // Update local item
   } catch (error) {
     console.error('Failed to set production:', error)
-    alert('Üretim türü seçilemedi: ' + (error.response?.data?.message || error.message))
+    addToast('Üretim türü seçilemedi: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 

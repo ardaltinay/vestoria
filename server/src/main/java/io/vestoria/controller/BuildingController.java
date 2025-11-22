@@ -1,6 +1,12 @@
 package io.vestoria.controller;
 
+import io.vestoria.converter.BuildingConverter;
 import io.vestoria.dto.request.CreateBuildingRequestDto;
+import io.vestoria.dto.request.SetProductionRequestDto;
+import io.vestoria.dto.response.BuildingProductionTypeDto;
+import io.vestoria.entity.UserEntity;
+import io.vestoria.enums.BuildingSubType;
+import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.service.BuildingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,6 +27,7 @@ import java.util.UUID;
 public class BuildingController {
 
     private final BuildingService buildingService;
+    private final BuildingConverter buildingConverter;
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody CreateBuildingRequestDto request, Principal principal) {
@@ -35,9 +43,9 @@ public class BuildingController {
 
     @PostMapping("/production/{buildingId}")
     public ResponseEntity<?> setProduction(@PathVariable UUID buildingId,
-            @RequestBody io.vestoria.dto.request.SetProductionRequestDto request, Principal principal) {
-        io.vestoria.entity.UserEntity user = buildingService.getUserRepository().findByUsername(principal.getName())
-                .orElseThrow(() -> new io.vestoria.exception.ResourceNotFoundException("Kullanıcı bulunamadı"));
+            @RequestBody SetProductionRequestDto request, Principal principal) {
+        UserEntity user = buildingService.getUserRepository().findByUsername(principal.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
         return ResponseEntity.ok(buildingService.setProduction(buildingId, user.getId(), request.getProductionType()));
     }
 
@@ -48,16 +56,11 @@ public class BuildingController {
 
     @GetMapping("/production-types")
     public ResponseEntity<?> getProductionTypes() {
-        java.util.List<io.vestoria.dto.response.BuildingProductionTypeDto> types = new java.util.ArrayList<>();
-        for (io.vestoria.enums.BuildingSubType subType : io.vestoria.enums.BuildingSubType.values()) {
-            if (subType == io.vestoria.enums.BuildingSubType.GENERIC)
+        List<BuildingProductionTypeDto> types = new java.util.ArrayList<>();
+        for (BuildingSubType subType : BuildingSubType.values()) {
+            if (subType == BuildingSubType.GENERIC)
                 continue;
-            types.add(io.vestoria.dto.response.BuildingProductionTypeDto.builder()
-                    .value(subType.name())
-                    .label(subType.getLabel())
-                    .description(subType.getDescription())
-                    .parentType(subType.getParentType())
-                    .build());
+            types.add(buildingConverter.toProductionTypeDto(subType));
         }
         return ResponseEntity.ok(types);
     }

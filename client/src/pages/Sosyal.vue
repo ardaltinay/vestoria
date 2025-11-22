@@ -1,8 +1,18 @@
 <template>
   <div class="p-6 max-w-6xl mx-auto">
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-slate-900">Sosyal</h1>
-      <p class="text-slate-500">Arkadaşlarını davet et ve gelişmelerden haberdar ol</p>
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Sosyal</h1>
+        <p class="text-slate-500">Arkadaşlarını davet et ve gelişmelerden haberdar ol</p>
+      </div>
+      <button 
+        v-if="isAdmin"
+        @click="showCreateModal = true"
+        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+      >
+        <PlusIcon class="w-5 h-5" />
+        Duyuru Ekle
+      </button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -108,17 +118,68 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Announcement Modal -->
+    <div v-if="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showCreateModal = false"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Yeni Duyuru Ekle</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Başlık</label>
+                <input v-model="newAnnouncement.title" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Tür</label>
+                <select v-model="newAnnouncement.type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                  <option value="NEWS">Haber</option>
+                  <option value="UPDATE">Güncelleme</option>
+                  <option value="EVENT">Etkinlik</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">İçerik</label>
+                <textarea v-model="newAnnouncement.content" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button @click="createAnnouncement" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+              Yayınla
+            </button>
+            <button @click="showCreateModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+              İptal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { UserPlusIcon, EnvelopeIcon, NewspaperIcon } from '@heroicons/vue/24/outline'
-import api from '../services/api'
+import { UserPlusIcon, EnvelopeIcon, NewspaperIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import AnnouncementService from '../services/AnnouncementService'
+import { useAuthStore } from '../stores/authStore'
+import { useToast } from '../composables/useToast'
 
+const authStore = useAuthStore()
+const { addToast } = useToast()
 const inviteEmail = ref('')
 const announcements = ref([])
 const loading = ref(true)
+const showCreateModal = ref(false)
+const newAnnouncement = ref({
+  title: '',
+  type: 'NEWS',
+  content: ''
+})
+
+const isAdmin = computed(() => authStore.user?.isAdmin)
 
 const isValidEmail = computed(() => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail.value)
@@ -155,12 +216,25 @@ const handleInvite = () => {
 const fetchAnnouncements = async () => {
   try {
     loading.value = true
-    const response = await api.get('/announcements')
+    const response = await AnnouncementService.getActiveAnnouncements()
     announcements.value = response.data
   } catch (error) {
     console.error('Failed to fetch announcements', error)
   } finally {
     loading.value = false
+  }
+}
+
+const createAnnouncement = async () => {
+  try {
+    await AnnouncementService.createAnnouncement(newAnnouncement.value)
+    addToast('Duyuru başarıyla oluşturuldu', 'success')
+    showCreateModal.value = false
+    newAnnouncement.value = { title: '', type: 'NEWS', content: '' }
+    fetchAnnouncements()
+  } catch (error) {
+    console.error('Failed to create announcement', error)
+    addToast('Duyuru oluşturulamadı: ' + (error.response?.data || error.message), 'error')
   }
 }
 
