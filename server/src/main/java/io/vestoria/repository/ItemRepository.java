@@ -30,7 +30,8 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
 
     List<ItemEntity> findAllByBuilding_Owner_Username(String username);
 
-    @Query("SELECT SUM(i.quantity) FROM ItemEntity i JOIN i.building b WHERE b.type = :type AND i.name = :name")
-    Long sumSupplyByItemNameAndBuildingType(@Param("name") String name,
-            @Param("type") BuildingType type);
+    @Query("SELECT SUM(i.supply) FROM ItemEntity i WHERE i.name = :itemName AND i.building.type = :type")
+    Long sumSupplyByItemNameAndBuildingType(@Param("itemName") String itemName, @Param("type") BuildingType type);
+
+    long countByBuildingIdAndQuantityGreaterThan(UUID buildingId, int quantity);
 }

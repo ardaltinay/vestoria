@@ -22,7 +22,7 @@
         
         <h1 class="text-4xl sm:text-6xl font-bold text-slate-900 tracking-tight mb-6 leading-tight">
           Ekonomik İmparatorluğunu <br/>
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500">İnşa Etmeye Başla</span>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-accent-500">İnşa Etmeye Başla</span>
         </h1>
         
         <p class="text-lg sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">

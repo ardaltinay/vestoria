@@ -44,7 +44,7 @@ public class NotificationService {
     UserEntity user = userRepository.findByUsername(username)
         .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
-    return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
+    return notificationRepository.findByUserIdOrderByCreatedTimeDesc(user.getId()).stream()
         .map(notificationConverter::toDto)
         .collect(Collectors.toList());
   }
@@ -75,7 +75,7 @@ public class NotificationService {
     UserEntity user = userRepository.findByUsername(username)
         .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
-    List<NotificationEntity> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    List<NotificationEntity> notifications = notificationRepository.findByUserIdOrderByCreatedTimeDesc(user.getId());
     notifications.forEach(n -> n.setRead(true));
     notificationRepository.saveAll(notifications);
   }

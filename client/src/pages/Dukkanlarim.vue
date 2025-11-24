@@ -32,46 +32,61 @@
     </div>
 
     <!-- Content Grid -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <AppCard v-for="shop in shops" :key="shop.id" class="group">
-        <template #header>
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div 
+        v-for="shop in shops" 
+        :key="shop.id" 
+        @click="$router.push(`/home/shops/${shop.id}`)"
+        class="group cursor-pointer bg-white rounded-lg shadow-sm border-l-4 border-amber-500 hover:shadow-lg transition-all duration-200"
+      >
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-gray-100">
           <div class="flex items-start justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                <BuildingStorefrontIcon class="w-6 h-6" />
+            <div class="flex items-center gap-3 flex-1">
+              <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 transition-colors">
+                <BuildingStorefrontIcon class="w-6 h-6 text-amber-600" />
               </div>
-              <div>
-                <h3 class="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">{{ shop.name }}</h3>
-                <div class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-1">
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-gray-900 group-hover:text-amber-600 transition-colors text-sm sm:text-base truncate">{{ shop.subType }}</h3>
+                <span class="inline-block mt-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
                   Seviye {{ shop.level }}
-                </div>
+                </span>
               </div>
             </div>
-            <!-- Status Indicator (Mock) -->
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" title="Aktif"></div>
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <p class="text-sm text-slate-600 line-clamp-2 min-h-[2.5rem]">{{ shop.description || 'Açıklama bulunmuyor.' }}</p>
-          
-          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-            <span class="text-xs font-medium text-slate-500 uppercase">Gelir</span>
-            <span class="text-sm font-bold text-emerald-600">{{ shop.productionRate }} ₺/dk</span>
+            <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse flex-shrink-0" title="Aktif"></div>
           </div>
         </div>
 
-        <template #footer>
-          <AppButton 
-            variant="outline" 
-            size="sm" 
-            block 
-            @click="$router.push(`/home/shops/${shop.id}`)"
-          >
-            Yönet
-          </AppButton>
-        </template>
-      </AppCard>
+        <!-- Content -->
+        <div class="p-4 sm:p-5 space-y-4">
+          <p class="text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">{{ shop.description || 'Açıklama bulunmuyor.' }}</p>
+          
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
+              <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Gelir /dak</div>
+              <div class="text-base sm:text-lg font-bold text-gray-900">₺{{ shop.productionRate || 0 }}</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
+              <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Stok</div>
+              <div class="text-base sm:text-lg font-bold text-gray-900">{{ shop.currentStock || 0 }}/{{ shop.maxStock }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-4 sm:px-5 pb-4 sm:pb-5">
+          <button class="w-full px-4 py-2.5 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition-colors shadow-sm text-sm">
+            <span class="flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Yönet
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
     <!-- Create Wizard -->
     <CreateBuildingWizard 
@@ -87,13 +102,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useShopsStore } from '../stores/shopsStore'
+import { useAuthStore } from '../stores/authStore'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
-import AppCard from '../components/AppCard.vue'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 import { PlusIcon, BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
 
 const store = useShopsStore()
+const authStore = useAuthStore()
 const shops = ref([])
 const loading = ref(true)
 const showWizard = ref(false)
@@ -113,6 +129,8 @@ async function handleCreate(payload) {
     await store.create(payload)
     showWizard.value = false
     await load()
+    // Refresh user balance
+    await authStore.fetchUser()
   } catch (error) {
     console.error('Failed to create shop:', error)
   }

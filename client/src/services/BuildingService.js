@@ -5,7 +5,10 @@ export default {
     return api.post('/build/create', { type, tier, subType });
   },
   upgrade(buildingId) {
-    return api.post(`/build/upgrade/${buildingId}`);
+    return api.put(`/build/upgrade/${buildingId}`);
+  },
+  closeBuilding(buildingId) {
+    return api.delete(`/build/close/${buildingId}`);
   },
 
   setProduction(buildingId, productionType) {
@@ -27,5 +30,14 @@ export default {
   },
   getProductionTypes() {
     return api.get('/build/production-types');
+  },
+  startSales(buildingId) {
+    return api.post(`/build/${buildingId}/start-sales`);
+  },
+  startProduction(buildingId) {
+    return api.post(`/build/${buildingId}/start-production`);
+  },
+  collect(buildingId) {
+    return api.post(`/build/${buildingId}/collect`);
   }
 };

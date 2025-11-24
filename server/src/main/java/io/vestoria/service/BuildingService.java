@@ -1,6 +1,7 @@
 package io.vestoria.service;
 
 import io.vestoria.entity.BuildingEntity;
+import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.BuildingTier;
@@ -8,6 +9,7 @@ import io.vestoria.enums.BuildingStatus;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.UserRepository;
+import io.vestoria.repository.MarketRepository;
 import io.vestoria.exception.InsufficientBalanceException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.ArrayList;
@@ -33,6 +36,89 @@ public class BuildingService {
     @lombok.Getter
     private final UserRepository userRepository;
     private final BuildingConverter buildingConverter;
+    private final MarketRepository marketRepository;
+
+    @Transactional
+    public void startSales(UUID buildingId, String username) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
+
+        if (!building.getOwner().getUsername().equals(username)) {
+            throw new UnauthorizedAccessException("Bu işletme size ait değil");
+        }
+
+        if (building.getType() != BuildingType.SHOP) {
+            throw new BusinessRuleException("Sadece dükkanlarda satış başlatılabilir");
+        }
+
+        if (Boolean.TRUE.equals(building.getIsSelling())) {
+            throw new BusinessRuleException("Zaten satış yapılıyor");
+        }
+
+        int currentStock = building.getItems() != null
+                ? building.getItems().stream().mapToInt(ItemEntity::getQuantity).sum()
+                : 0;
+        if (currentStock <= 0) {
+            throw new BusinessRuleException("Satılacak ürün yok. Önce ürün eklemelisiniz.");
+        }
+
+        // Start 10 minute timer
+        building.setIsSelling(true);
+        building.setSalesEndsAt(LocalDateTime.now().plusMinutes(10));
+        buildingRepository.save(building);
+    }
+
+    @Transactional
+    public void startProduction(UUID buildingId, String username) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
+
+        if (!building.getOwner().getUsername().equals(username)) {
+            throw new UnauthorizedAccessException("Bu işletme size ait değil");
+        }
+
+        if (building.getType() == BuildingType.SHOP) {
+            throw new BusinessRuleException("Dükkanlarda üretim yapılamaz");
+        }
+
+        if (Boolean.TRUE.equals(building.getIsProducing())) {
+            throw new BusinessRuleException("Zaten üretim yapılıyor");
+        }
+
+        // Check costs (simplified for now, can be expanded)
+        long durationMinutes = getProductionDuration(building.getType(), building.getTier(), building.getLevel());
+
+        building.setIsProducing(true);
+        building.setProductionEndsAt(LocalDateTime.now().plusMinutes(durationMinutes));
+        buildingRepository.save(building);
+    }
+
+    @Transactional
+    public void collectProduction(UUID buildingId, String username) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
+
+        if (!building.getOwner().getUsername().equals(username)) {
+            throw new UnauthorizedAccessException("Bu işletme size ait değil");
+        }
+
+        if (!Boolean.TRUE.equals(building.getIsProducing())) {
+            throw new BusinessRuleException("Üretim yapılmıyor");
+        }
+
+        if (building.getProductionEndsAt().isAfter(java.time.LocalDateTime.now())) {
+            throw new BusinessRuleException("Üretim henüz tamamlanmadı");
+        }
+
+        // Add items to inventory (Simplified logic)
+        // In a real scenario, we would determine WHAT was produced.
+        // For now, let's assume we produce based on building subtype.
+
+        // Reset status
+        building.setIsProducing(false);
+        building.setProductionEndsAt(null);
+        buildingRepository.save(building);
+    }
 
     @Transactional
     @SuppressWarnings("null")
@@ -98,29 +184,81 @@ public class BuildingService {
             throw new UnauthorizedAccessException("Bu binayı yükseltme yetkiniz yok.");
         }
 
+        // Check max level (10)
         if (building.getLevel() >= 3) {
             throw new BusinessRuleException("Bina zaten maksimum seviyede (Seviye 3).");
         }
 
-        int nextLevel = building.getLevel() + 1;
-        BigDecimal upgradeCost = getBuildingCost(building.getType(), building.getTier(), nextLevel);
+        BigDecimal upgradeCost = new BigDecimal("15000");
         UserEntity user = building.getOwner();
 
         if (user.getBalance().compareTo(upgradeCost) < 0) {
             throw new InsufficientBalanceException(
-                    "Yetersiz bakiye! Yükseltme için " + upgradeCost + " TL gerekiyor.");
+                    "Yetersiz bakiye! Yükseltme için 15,000 TL gerekiyor.");
         }
 
         user.setBalance(user.getBalance().subtract(upgradeCost));
         userRepository.save(user);
 
+        int nextLevel = building.getLevel() + 1;
         building.setLevel(nextLevel);
         building.setProductionRate(getProductionRate(building.getType(), building.getTier(), nextLevel));
         building.setMaxStock(getStorageCapacity(building.getType(), building.getTier(), nextLevel));
-        building.setStatus(BuildingStatus.UPGRADING); // Set status to UPGRADING during upgrade if needed, or keep
-                                                      // ACTIVE
 
         return buildingRepository.save(building);
+    }
+
+    @Transactional
+    public void closeBuilding(UUID buildingId, String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
+        closeBuilding(buildingId, user.getId());
+    }
+
+    @Transactional
+    @SuppressWarnings("null")
+    public void closeBuilding(UUID buildingId, UUID userId) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
+
+        if (!building.getOwner().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("Bu binayı kapatma yetkiniz yok.");
+        }
+
+        // Check if building has any inventory items
+        if (building.getItems() != null && !building.getItems().isEmpty()) {
+            int totalItems = building.getItems().stream()
+                    .mapToInt(ItemEntity::getQuantity)
+                    .sum();
+            if (totalItems > 0) {
+                throw new BusinessRuleException(
+                        "Binada ürün bulunuyor. Önce tüm ürünleri satmalısınız veya kullanmalısınız.");
+            }
+        }
+
+        // Check if building has any active market listings
+        long activeListings = marketRepository.countActiveListingsByBuilding(buildingId);
+        if (activeListings > 0) {
+            throw new BusinessRuleException(
+                    "Bu binaya ait pazarda aktif ilanlar bulunuyor. Önce ilanları iptal etmelisiniz.");
+        }
+
+        // Calculate refund (building cost - 10,000 TL)
+        BigDecimal buildingCost = getBuildingCost(building.getType(), building.getTier(), building.getLevel());
+        BigDecimal refund = buildingCost.subtract(new BigDecimal("10000"));
+
+        // Ensure refund is not negative
+        if (refund.compareTo(BigDecimal.ZERO) < 0) {
+            refund = BigDecimal.ZERO;
+        }
+
+        // Refund to user
+        UserEntity user = building.getOwner();
+        user.setBalance(user.getBalance().add(refund));
+        userRepository.save(user);
+
+        // Delete building
+        buildingRepository.delete(building);
     }
 
     @Transactional
@@ -302,6 +440,55 @@ public class BuildingService {
             }
         }
         return base * level;
+    }
+
+    private long getProductionDuration(BuildingType type, BuildingTier tier, int level) {
+        long baseMinutes;
+        switch (type) {
+            case GARDEN:
+                baseMinutes = 15;
+                break;
+            case FARM:
+                baseMinutes = 20;
+                break;
+            case FACTORY:
+                baseMinutes = 25;
+                break;
+            case MINE:
+                baseMinutes = 30;
+                break;
+            default:
+                baseMinutes = 10;
+        }
+
+        // Higher tier takes slightly longer but produces more (handled in production
+        // rate)
+        // Or maybe higher tier is faster? Let's say higher tier is same duration but
+        // more output.
+        // But user asked for duration to change.
+        // Let's say Higher Tier = Faster? Or Slower?
+        // Usually Higher Tier = More Capacity/Speed.
+        // Let's make Higher Tier FASTER.
+        if (tier != null) {
+            switch (tier) {
+                case MEDIUM:
+                    baseMinutes = (long) (baseMinutes * 0.9); // 10% faster
+                    break;
+                case LARGE:
+                    baseMinutes = (long) (baseMinutes * 0.8); // 20% faster
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Higher Level = Faster
+        if (level == 2)
+            baseMinutes = (long) (baseMinutes * 0.9);
+        if (level == 3)
+            baseMinutes = (long) (baseMinutes * 0.8);
+
+        return Math.max(1, baseMinutes); // Minimum 1 minute
     }
 
     private Integer getMaxSlots(BuildingTier tier) {

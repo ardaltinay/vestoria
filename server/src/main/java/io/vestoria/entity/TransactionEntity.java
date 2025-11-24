@@ -22,7 +22,7 @@ import java.math.BigDecimal;
         @Index(name = "idx_transactions_buyer_id", columnList = "buyer_id"),
         @Index(name = "idx_transactions_market_item_id", columnList = "market_item_id"),
         @Index(name = "idx_transactions_item_name", columnList = "itemName"),
-        @Index(name = "idx_transactions_created_at", columnList = "createdAt")
+        @Index(name = "idx_transactions_created_time", columnList = "createdTime")
 })
 @Getter
 @Setter

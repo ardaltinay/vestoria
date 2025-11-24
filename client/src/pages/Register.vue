@@ -21,7 +21,7 @@
               type="text" 
               class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
               :class="{ 'border-red-500 focus:ring-red-500 focus:border-red-500': errors.username }"
-              placeholder="Girişimci adınız"
+              placeholder="Kullanıcı adınız"
             />
             <p v-if="errors.username" class="text-xs text-red-500 mt-1">{{ errors.username }}</p>
           </div>
@@ -144,8 +144,7 @@ async function handleRegister() {
 
   try {
     loading.value = true
-    const response = await AuthService.register(form.value)
-    authStore.login(response.data) // Assuming response.data contains user info
+    await authStore.register(form.value)
     router.push('/home')
   } catch (error) {
     console.error('Registration failed:', error)

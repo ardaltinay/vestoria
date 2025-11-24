@@ -19,7 +19,7 @@ public class AnnouncementService {
 
   @Cacheable("announcements")
   public List<AnnouncementEntity> getActiveAnnouncements() {
-    return announcementRepository.findAllByIsActiveTrueOrderByCreatedAtDesc();
+    return announcementRepository.findAllByIsActiveTrueOrderByCreatedTimeDesc();
   }
 
   @Transactional

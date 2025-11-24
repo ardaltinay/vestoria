@@ -5,10 +5,11 @@ import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.BuildingSubType;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 @Data
-public class CreateBuildingRequestDto {
+public class CreateBuildingRequestDto implements Serializable {
   private BuildingType type;
   private BuildingTier tier;
   private BuildingSubType subType;

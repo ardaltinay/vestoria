@@ -21,6 +21,8 @@ public class UserController {
   private final UserService userService;
   private final UserRepository userRepository;
 
+  private final io.vestoria.converter.AuthConverter authConverter;
+
   @GetMapping("/dashboard-stats")
   public ResponseEntity<DashboardStatsDto> getDashboardStats(Principal principal) {
     UserEntity user = userRepository.findByUsername(principal.getName())
@@ -28,4 +30,5 @@ public class UserController {
 
     return ResponseEntity.ok(userService.getDashboardStats(user));
   }
+
 }

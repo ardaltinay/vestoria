@@ -4,7 +4,7 @@ spring:
   application:
     name: Vestoria
 
-    datasource:
+  datasource:
     url: jdbc:postgresql://localhost:5432/vestoria
     username: postgres
     password: testere1500

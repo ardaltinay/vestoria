@@ -2,10 +2,12 @@ package io.vestoria.repository;
 
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.UserEntity;
+import io.vestoria.enums.BuildingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,7 +18,9 @@ public interface BuildingRepository extends JpaRepository<BuildingEntity, UUID> 
   @Query("SELECT b FROM BuildingEntity b LEFT JOIN FETCH b.items WHERE b.type = 'SHOP'")
   List<BuildingEntity> findAllShopsWithItems();
 
-  long countByOwnerAndStatus(UserEntity owner, String status);
+  long countByOwnerAndStatus(UserEntity owner, BuildingStatus status);
 
-  long countByStatus(String status);
+  long countByStatus(BuildingStatus status);
+
+  List<BuildingEntity> findAllByIsSellingTrueAndSalesEndsAtBefore(LocalDateTime now);
 }

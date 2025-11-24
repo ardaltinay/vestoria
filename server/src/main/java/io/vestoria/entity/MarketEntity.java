@@ -42,7 +42,4 @@ public class MarketEntity extends BaseEntity {
 
     @Column(name = "is_active")
     private Boolean isActive;
-
-    @jakarta.persistence.Version
-    private Long version;
 }

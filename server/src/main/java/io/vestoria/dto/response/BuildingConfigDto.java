@@ -9,11 +9,14 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BuildingConfigDto {
+public class BuildingConfigDto implements Serializable {
+  private static final long serialVersionUID = 1L;
   private BuildingType type;
   private BuildingTier tier;
   private BigDecimal cost;

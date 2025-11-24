@@ -25,8 +25,8 @@
       <div class="p-4 border-b border-slate-100 bg-slate-50/50">
         <div class="flex items-center gap-3 mb-3">
           <img 
-            src="https://ui-avatars.com/api/?name=Oyuncu&background=random" 
-            alt="Oyuncu" 
+            :src="`https://ui-avatars.com/api/?name=${username}&background=random`" 
+            :alt="username" 
             class="w-10 h-10 rounded-full border-2 border-white shadow-sm" 
           />
           <div class="flex-1 min-w-0">
@@ -279,6 +279,7 @@ import {
 import Logo from '../components/Logo.vue'
 import AuthService from '../services/AuthService'
 import { useAuthStore } from '../stores/authStore'
+import { useToast } from '../composables/useToast'
 
 const route = useRoute()
 const router = useRouter()
@@ -296,46 +297,27 @@ const xpPercentage = computed(() => {
 })
 
 // Notifications
-import NotificationService from '../services/NotificationService'
-import UserService from '../services/UserService'
-import { useToast } from '../composables/useToast'
+import { useNotificationStore } from '../stores/notificationStore'
+import { storeToRefs } from 'pinia'
+
+const notificationStore = useNotificationStore()
+const { notifications, unreadCount } = storeToRefs(notificationStore)
 
 const showNotifications = ref(false)
 const showUserMenu = ref(false)
-const notifications = ref([])
-const unreadCount = ref(0)
 const { addToast } = useToast()
 
 let pollingInterval = null
 
-const fetchNotifications = async () => {
-  try {
-    const [notifsRes, countRes] = await Promise.all([
-      NotificationService.getNotifications(),
-      NotificationService.getUnreadCount()
-    ])
-    notifications.value = notifsRes.data
-    unreadCount.value = countRes.data
-  } catch (error) {
-    console.error('Failed to fetch notifications', error)
-  }
-}
-
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
-    fetchNotifications()
+    notificationStore.fetchNotifications()
   }
 }
 
-const markAllRead = async () => {
-  try {
-    await NotificationService.markAllAsRead()
-    unreadCount.value = 0
-    notifications.value.forEach(n => n.isRead = true)
-  } catch (error) {
-    console.error('Failed to mark all read', error)
-  }
+const markAllRead = () => {
+  notificationStore.markAllAsRead()
 }
 
 const formatDate = (dateString) => {
@@ -358,10 +340,10 @@ const handleClickOutside = (event) => {
 }
 
 onMounted(() => {
-  fetchNotifications()
+  notificationStore.fetchNotifications()
   // Poll every 30 seconds for notifications only
   pollingInterval = setInterval(() => {
-    fetchNotifications()
+    notificationStore.fetchNotifications()
   }, 30000)
   
   document.addEventListener('click', handleClickOutside)
@@ -376,7 +358,7 @@ const handleLogout = async () => {
   try {
     await AuthService.logout()
     authStore.logout() // Clear local store
-    router.push('/login')
+    router.push('/')
   } catch (error) {
     console.error('Logout failed:', error)
   }

@@ -1,51 +1,52 @@
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <div class="mb-8 flex justify-between items-center">
+  <div class="p-4 sm:p-6 max-w-6xl mx-auto">
+    <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Sosyal</h1>
-        <p class="text-slate-500">Arkadaşlarını davet et ve gelişmelerden haberdar ol</p>
+        <h1 class="text-xl sm:text-2xl font-bold text-slate-900">Sosyal</h1>
+        <p class="text-sm text-slate-500">Arkadaşlarını davet et ve gelişmelerden haberdar ol</p>
       </div>
       <button 
         v-if="isAdmin"
         @click="showCreateModal = true"
-        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+        class="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
       >
-        <PlusIcon class="w-5 h-5" />
-        Duyuru Ekle
+        <PlusIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+        <span class="hidden sm:inline">Duyuru Ekle</span>
+        <span class="sm:hidden">Ekle</span>
       </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
       <!-- Invite Section -->
       <div class="lg:col-span-1">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sticky top-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-              <UserPlusIcon class="w-6 h-6" />
+        <div class="bg-white rounded-lg sm:rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 lg:sticky lg:top-6">
+          <div class="flex items-center gap-3 mb-4 sm:mb-6">
+            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <UserPlusIcon class="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 class="font-bold text-slate-900">Arkadaşını Davet Et</h2>
+              <h2 class="font-bold text-slate-900 text-sm sm:text-base">Arkadaşını Davet Et</h2>
               <p class="text-xs text-slate-500">Birlikte büyüyün</p>
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-3 sm:space-y-4">
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">E-posta Adresi</label>
+              <label class="block text-xs sm:text-sm font-medium text-slate-700 mb-1">E-posta Adresi</label>
               <input 
                 v-model="inviteEmail"
                 type="email" 
                 placeholder="ornek@email.com"
-                class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                class="w-full px-3 sm:px-4 py-2 text-sm rounded-lg sm:rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               >
             </div>
             
             <button 
               @click="handleInvite"
               :disabled="!isValidEmail"
-              class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+              class="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl font-medium sm:font-bold transition-colors flex items-center justify-center gap-2 text-sm"
             >
-              <EnvelopeIcon class="w-5 h-5" />
+              <EnvelopeIcon class="w-4 h-4 sm:w-5 sm:h-5" />
               Davet Gönder
             </button>
             
@@ -58,14 +59,14 @@
 
       <!-- Newspaper Section -->
       <div class="lg:col-span-2">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div class="bg-white rounded-lg sm:rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                <NewspaperIcon class="w-6 h-6" />
+                <NewspaperIcon class="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h2 class="font-bold text-slate-900">Vestoria Gazetesi</h2>
+                <h2 class="font-bold text-slate-900 text-sm sm:text-base">Vestoria Gazetesi</h2>
                 <p class="text-xs text-slate-500">Son gelişmeler ve duyurular</p>
               </div>
             </div>
@@ -73,42 +74,42 @@
           </div>
 
           <div class="divide-y divide-slate-100">
-            <div v-if="loading" class="p-8 text-center text-slate-400">
+            <div v-if="loading" class="p-6 sm:p-8 text-center text-slate-400 text-sm">
               Yükleniyor...
             </div>
             
-            <div v-else-if="announcements.length === 0" class="p-12 text-center">
-              <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                <NewspaperIcon class="w-8 h-8" />
+            <div v-else-if="announcements.length === 0" class="p-8 sm:p-12 text-center">
+              <div class="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 text-slate-400">
+                <NewspaperIcon class="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
-              <h3 class="text-slate-900 font-medium mb-1">Henüz haber yok</h3>
-              <p class="text-slate-500 text-sm">Şimdilik her şey sakin görünüyor.</p>
+              <h3 class="text-slate-900 font-medium mb-1 text-sm sm:text-base">Henüz haber yok</h3>
+              <p class="text-slate-500 text-xs sm:text-sm">Şimdilik her şey sakin görünüyor.</p>
             </div>
 
-            <div v-for="news in announcements" :key="news.id" class="p-6 hover:bg-slate-50 transition-colors group">
-              <div class="flex items-start gap-4">
+            <div v-for="news in announcements" :key="news.id" class="p-4 sm:p-6 hover:bg-slate-50 transition-colors group">
+              <div class="flex items-start gap-3 sm:gap-4">
                 <!-- Type Badge -->
                 <div 
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border"
+                  class="shrink-0 px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border"
                   :class="{
                     'bg-blue-50 text-blue-600 border-blue-100': news.type === 'UPDATE',
                     'bg-emerald-50 text-emerald-600 border-emerald-100': news.type === 'NEWS',
-                    'bg-purple-50 text-purple-600 border-purple-100': news.type === 'EVENT'
+                    'bg-amber-50 text-amber-600 border-amber-100': news.type === 'EVENT'
                   }"
                 >
                   {{ getTypeLabel(news.type) }}
                 </div>
                 
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-bold text-slate-900 text-lg group-hover:text-indigo-600 transition-colors">
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1 sm:gap-0">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg group-hover:text-blue-600 transition-colors">
                       {{ news.title }}
                     </h3>
-                    <span class="text-xs text-slate-400 whitespace-nowrap ml-4">
+                    <span class="text-xs text-slate-400 whitespace-nowrap sm:ml-4">
                       {{ formatDate(news.createdAt) }}
                     </span>
                   </div>
-                  <p class="text-slate-600 leading-relaxed text-sm whitespace-pre-line">
+                  <p class="text-slate-600 leading-relaxed text-xs sm:text-sm whitespace-pre-line">
                     {{ news.content }}
                   </p>
                 </div>
@@ -130,11 +131,11 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700">Başlık</label>
-                <input v-model="newAnnouncement.title" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <input v-model="newAnnouncement.title" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Tür</label>
-                <select v-model="newAnnouncement.type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <select v-model="newAnnouncement.type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                   <option value="NEWS">Haber</option>
                   <option value="UPDATE">Güncelleme</option>
                   <option value="EVENT">Etkinlik</option>
@@ -142,15 +143,15 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">İçerik</label>
-                <textarea v-model="newAnnouncement.content" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                <textarea v-model="newAnnouncement.content" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
               </div>
             </div>
           </div>
-          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button @click="createAnnouncement" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+            <button @click="createAnnouncement" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm">
               Yayınla
             </button>
-            <button @click="showCreateModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+            <button @click="showCreateModal = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">
               İptal
             </button>
           </div>

@@ -45,7 +45,7 @@ public class AuthService {
             throw new BusinessRuleException("Bu Kullanıcı Adı Kullanılıyor!");
         }
 
-        if (userRepository.existByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessRuleException("Bu Email Adresi Kullanılıyor!");
         }
 

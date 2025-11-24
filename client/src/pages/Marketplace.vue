@@ -1,66 +1,183 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-slate-900">Pazar Yeri</h1>
-      <button 
-        @click="showSellModal = true"
-        class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-      >
-        İlan Ver
-      </button>
+  <div class="space-y-4 sm:space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <h1 class="text-xl sm:text-2xl font-bold text-slate-900">Pazar Yeri</h1>
+      <div class="flex gap-2 sm:gap-3">
+        <div class="flex-1 sm:flex-initial sm:w-64">
+          <div class="relative">
+            <input 
+              v-model="searchQuery"
+              @input="handleSearch"
+              type="text" 
+              placeholder="Ürün ara..." 
+              class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            >
+            <MagnifyingGlassIcon class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 absolute left-2.5 sm:left-3 top-2.5" />
+          </div>
+        </div>
+        <button 
+          @click="showSellModal = true"
+          class="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium whitespace-nowrap"
+        >
+          İlan Ver
+        </button>
+      </div>
     </div>
 
     <!-- Empty State -->
-    <div v-if="listings.length === 0" class="text-center py-12 bg-white rounded-xl border border-slate-200 shadow-sm">
-      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-        <ShoppingCartIcon class="w-8 h-8" />
+    <div v-if="listings.length === 0" class="text-center py-8 sm:py-12 bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-sm">
+      <div class="w-12 h-12 sm:w-16 sm:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 text-slate-400">
+        <ShoppingCartIcon class="w-6 h-6 sm:w-8 sm:h-8" />
       </div>
-      <h3 class="text-lg font-bold text-slate-900 mb-1">Henüz İlan Yok</h3>
-      <p class="text-slate-500 max-w-sm mx-auto mb-6">
+      <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-1">Henüz İlan Yok</h3>
+      <p class="text-sm text-slate-500 max-w-sm mx-auto mb-4 sm:mb-6 px-4">
         Şu anda pazarda aktif bir ilan bulunmuyor. İlk ilanı siz verin!
       </p>
       <button 
         @click="showSellModal = true"
-        class="bg-primary-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20"
+        class="bg-primary-600 text-white px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 text-sm"
       >
         Hemen İlan Ver
       </button>
     </div>
 
-    <!-- Listings Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="listing in listings" :key="listing.id" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h3 class="font-bold text-slate-900">{{ listing.item.name }}</h3>
-            <div class="text-sm text-slate-500">Satıcı: {{ listing.seller.username }}</div>
-          </div>
-          <div class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs font-bold">
-            ₺{{ listing.price }}
-          </div>
+    <!-- Listings Table -->
+    <div v-else class="bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto -mx-4 sm:mx-0">
+        <div class="inline-block min-w-full align-middle px-4 sm:px-0">
+          <table class="min-w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+              <tr>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Ürün</th>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden md:table-cell">Satıcı</th>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Miktar</th>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">Kalite</th>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Fiyat</th>
+                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-right">İşlem</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="listing in listings" :key="listing.id" class="hover:bg-slate-50 transition-colors">
+                <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 text-xs sm:text-sm">{{ listing.itemName }}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm hidden md:table-cell">{{ listing.sellerUsername }}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm">{{ listing.quantity }}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">
+                    ★ {{ listing.qualityScore }}
+                  </span>
+                </td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-emerald-600 text-xs sm:text-sm">₺{{ listing.price }}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                  <button 
+                    @click="openBuyModal(listing)"
+                    class="bg-slate-900 text-white px-2.5 sm:px-4 py-1.5 rounded-md sm:rounded-lg hover:bg-slate-800 transition-colors text-xs font-medium"
+                  >
+                    <span class="hidden sm:inline">Satın Al</span>
+                    <span class="sm:hidden">Al</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        
-        <div class="space-y-2 mb-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-500">Miktar:</span>
-            <span class="font-medium">{{ listing.quantity }} {{ listing.item.unit }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-500">Kalite:</span>
-            <span class="font-medium text-amber-500">★ {{ listing.item.qualityScore }}</span>
-          </div>
-        </div>
-
-        <button 
-          @click="buyItem(listing)"
-          :disabled="buyingId === listing.id"
-          class="w-full bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span v-if="buyingId === listing.id">İşleniyor...</span>
-          <span v-else>Satın Al</span>
-        </button>
       </div>
     </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="flex justify-center items-center gap-3 sm:gap-4 mt-4 sm:mt-6">
+      <button 
+        @click="changePage(currentPage - 1)"
+        :disabled="currentPage === 0"
+        class="px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 font-medium text-sm"
+      >
+        Önceki
+      </button>
+      <span class="text-slate-600 text-sm">
+        Sayfa {{ currentPage + 1 }} / {{ totalPages }}
+      </span>
+      <button 
+        @click="changePage(currentPage + 1)"
+        :disabled="currentPage >= totalPages - 1"
+        class="px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 font-medium text-sm"
+      >
+        Sonraki
+      </button>
+    </div>
+
+    <!-- Buy Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showBuyModal && selectedListing" 
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        @click.self="closeBuyModal"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+          <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-slate-900">Ürün Satın Al</h2>
+            <button @click="closeBuyModal" class="text-slate-400 hover:text-slate-600">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div class="p-6 space-y-6">
+            <!-- Item Details -->
+            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div class="flex-1">
+                <h3 class="font-bold text-slate-900">{{ selectedListing.itemName }}</h3>
+                <div class="text-sm text-slate-500">Satıcı: {{ selectedListing.sellerUsername }}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-emerald-600">₺{{ selectedListing.price }}</div>
+                <div class="text-xs text-slate-400">/ birim</div>
+              </div>
+            </div>
+
+            <!-- Quantity Input -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">
+                Miktar (Maks: {{ selectedListing.quantity }})
+              </label>
+              <div class="flex items-center gap-2">
+                <input 
+                  v-model.number="buyQuantity"
+                  type="number" 
+                  min="1" 
+                  :max="selectedListing.quantity"
+                  class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 font-bold text-lg"
+                >
+                <span class="text-slate-500 font-medium">{{ selectedListing.itemUnit }}</span>
+              </div>
+            </div>
+
+            <!-- Total Cost -->
+            <div class="flex justify-between items-center py-4 border-t border-slate-100">
+              <span class="text-slate-600 font-medium">Toplam Tutar</span>
+              <span class="text-2xl font-bold text-emerald-600">
+                ₺{{ (selectedListing.price * buyQuantity).toFixed(2) }}
+              </span>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+              <button 
+                @click="closeBuyModal" 
+                class="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                İptal
+              </button>
+              <button 
+                @click="confirmBuy"
+                :disabled="isBuying || !isValidBuyQuantity"
+                class="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-slate-900/20"
+              >
+                <span v-if="isBuying">İşleniyor...</span>
+                <span v-else>Satın Al</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Sell Modal -->
     <Teleport to="body">
@@ -173,15 +290,25 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import MarketService from '../services/MarketService'
 import InventoryService from '../services/InventoryService'
 import { useToast } from '../composables/useToast'
-import { XMarkIcon, ArchiveBoxIcon, ShoppingCartIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, ArchiveBoxIcon, ShoppingCartIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 
 const listings = ref([])
 const inventory = ref([])
 const showSellModal = ref(false)
+const showBuyModal = ref(false)
 const loadingInventory = ref(false)
 const isListing = ref(false)
-const buyingId = ref(null)
+const isBuying = ref(false)
 const selectedItem = ref(null)
+const selectedListing = ref(null)
+const buyQuantity = ref(1)
+
+// Pagination & Search
+const currentPage = ref(0)
+const totalPages = ref(0)
+const searchQuery = ref('')
+const pageSize = 50
+
 const listingForm = ref({
   quantity: 1,
   price: 10
@@ -197,6 +324,12 @@ const isValidListing = computed(() => {
          listingForm.value.price > 0
 })
 
+const isValidBuyQuantity = computed(() => {
+  return selectedListing.value && 
+         buyQuantity.value > 0 && 
+         buyQuantity.value <= selectedListing.value.quantity
+})
+
 const getQualityColor = (score) => {
   if (score >= 8) return 'bg-emerald-500'
   if (score >= 5) return 'bg-amber-500'
@@ -205,11 +338,41 @@ const getQualityColor = (score) => {
 
 const fetchListings = async () => {
   try {
-    const response = await MarketService.getActiveListings()
-    listings.value = response.data
+    const response = await MarketService.getActiveListings({
+      page: currentPage.value,
+      size: pageSize,
+      search: searchQuery.value || null
+    })
+    
+    // Check if response is paginated (has content property)
+    if (response.data.content) {
+      listings.value = response.data.content
+      totalPages.value = response.data.totalPages
+    } else {
+      // Fallback for non-paginated response (if any)
+      listings.value = response.data
+      totalPages.value = 1
+    }
   } catch (error) {
     console.error('Error fetching listings:', error)
   }
+}
+
+const changePage = (page) => {
+  if (page >= 0 && page < totalPages.value) {
+    currentPage.value = page
+    fetchListings()
+  }
+}
+
+// Debounce search
+let searchTimeout = null
+const handleSearch = () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 0 // Reset to first page on search
+    fetchListings()
+  }, 300)
 }
 
 const fetchInventory = async () => {
@@ -250,18 +413,32 @@ const handleCreateListing = async () => {
   }
 }
 
-const buyItem = async (listing) => {
-  if (buyingId.value) return
+const openBuyModal = (listing) => {
+  selectedListing.value = listing
+  buyQuantity.value = 1
+  showBuyModal.value = true
+}
+
+const closeBuyModal = () => {
+  showBuyModal.value = false
+  selectedListing.value = null
+  buyQuantity.value = 1
+}
+
+const confirmBuy = async () => {
+  if (!selectedListing.value || isBuying.value) return
   
   try {
-    buyingId.value = listing.id
-    await MarketService.buyItem(listing.id, { quantity: 1 }) // Assuming buying 1 for now
+    isBuying.value = true
+    await MarketService.buyItem(selectedListing.value.id, { quantity: buyQuantity.value })
     addToast('Satın alma başarılı!', 'success')
     fetchListings()
+    closeBuyModal()
   } catch (error) {
-    // Error handled globally
+    console.error('Buy failed:', error)
+    // Error handled globally by interceptor
   } finally {
-    buyingId.value = null
+    isBuying.value = false
   }
 }
 

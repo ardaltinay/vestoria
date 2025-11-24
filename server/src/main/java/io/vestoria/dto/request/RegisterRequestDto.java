@@ -6,8 +6,10 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class RegisterRequestDto {
+public class RegisterRequestDto implements Serializable {
   @NotBlank(message = "Kullanıcı adı zorunludur")
   @Size(min = 4, max = 20, message = "Kullanıcı adı 4-20 karakter arasında olmalıdır")
   private String username;

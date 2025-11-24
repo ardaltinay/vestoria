@@ -13,11 +13,11 @@ import java.util.UUID;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<TransactionEntity, UUID> {
-  @Query("SELECT SUM(t.price) FROM TransactionEntity t WHERE t.seller = :seller AND t.createdAt > :date")
+  @Query("SELECT SUM(t.price) FROM TransactionEntity t WHERE t.seller = :seller AND t.createdTime > :date")
   BigDecimal sumEarningsBySellerAndCreatedAtAfter(@Param("seller") UserEntity seller,
       @Param("date") LocalDateTime date);
 
-  @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.itemName = :itemName AND t.createdAt > :date")
+  @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.itemName = :itemName AND t.createdTime > :date")
   Integer sumAmountByItemNameAndCreatedAtAfter(@Param("itemName") String itemName,
       @Param("date") LocalDateTime date);
 }

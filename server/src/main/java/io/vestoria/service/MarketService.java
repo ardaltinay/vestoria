@@ -20,10 +20,14 @@ import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.exception.InsufficientBalanceException;
+import io.vestoria.converter.MarketConverter;
+import io.vestoria.dto.response.MarketResponseDto;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +47,7 @@ public class MarketService {
   private final TransactionRepository transactionRepository;
   private final BuildingRepository buildingRepository;
   private final NotificationService notificationService;
+  private final MarketConverter marketConverter;
 
   @Transactional
   @SuppressWarnings("null")
@@ -176,7 +181,7 @@ public class MarketService {
     // Check Compatibility
     if (!isCompatible(targetBuilding, marketItem.getItem().getCategory())) {
       throw new BusinessRuleException(
-          "Bu ürün bu işletme türü (" + targetBuilding.getSubType().name() + ") için uygun değil.");
+          "Bu ürün bu işletme türü için uygun değil.");
     }
 
     // Check if buyer already has this item in the target building
@@ -203,6 +208,17 @@ public class MarketService {
       existingItem.setQualityScore(newAvgQuality);
       itemRepository.save(existingItem);
     } else {
+      // Check Shop Capacity Limit
+      // Count distinct item types currently in stock (quantity > 0)
+      long activeItemCount = itemRepository.countByBuildingIdAndQuantityGreaterThan(targetBuilding.getId(), 0);
+
+      // Capacity is equal to building level
+      if (activeItemCount >= targetBuilding.getLevel()) {
+        throw new BusinessRuleException(
+            "Dükkan kapasitesi dolu! Seviye " + targetBuilding.getLevel() + " dükkan en fazla "
+                + targetBuilding.getLevel() + " çeşit ürün satabilir.");
+      }
+
       // Create new item for buyer
       ItemEntity newItem = ItemEntity.builder()
           .name(marketItem.getItem().getName())
@@ -211,6 +227,7 @@ public class MarketService {
           .quantity(quantity)
           .qualityScore(marketItem.getItem().getQualityScore())
           .tier(marketItem.getItem().getTier())
+          .category(marketItem.getItem().getCategory()) // Ensure category is copied
           .building(targetBuilding)
           // Supply/Demand are global or not set on individual items usually, but we copy
           // if needed
@@ -239,8 +256,11 @@ public class MarketService {
   }
 
   @Cacheable("activeListings")
-  public List<MarketEntity> getActiveListings() {
-    return marketRepository.findAllActiveWithDetails();
+  public Page<MarketResponseDto> getActiveListings(String search, int page, int size) {
+    // Note: We are not caching search results for now as they are dynamic
+    String searchTerm = search != null ? "%" + search.toLowerCase() + "%" : null;
+    return marketRepository.findAllActiveWithDetails(searchTerm, PageRequest.of(page, size))
+        .map(marketConverter::toResponseDto);
   }
 
   private boolean isCompatible(BuildingEntity building, ItemCategory category) {

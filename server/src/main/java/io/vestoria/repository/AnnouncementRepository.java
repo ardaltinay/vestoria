@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface AnnouncementRepository extends JpaRepository<AnnouncementEntity, UUID> {
-  List<AnnouncementEntity> findAllByIsActiveTrueOrderByCreatedAtDesc();
+  List<AnnouncementEntity> findAllByIsActiveTrueOrderByCreatedTimeDesc();
 }

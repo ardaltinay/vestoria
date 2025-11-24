@@ -1,8 +1,8 @@
 import api from './api';
 
 export default {
-  getActiveListings() {
-    return api.get('/market/listings', { suppressToast: true });
+  getActiveListings(params) {
+    return api.get('/market/listings', { params, suppressToast: true });
   },
   listItem(itemId, data) {
     return api.post(`/market/list/${itemId}`, data)

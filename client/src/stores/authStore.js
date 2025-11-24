@@ -18,9 +18,11 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true
       this.error = null
       try {
-        const res = await api.post('/api/auth/register', { username, email, password })
+        const res = await api.post('/auth/register', { username, email, password })
         // Expect backend to set HttpOnly cookie for session and return user object
-        const user = res.user || (res.id ? { id: res.id, username: res.username, email: res.email } : res)
+        const data = res.data
+        // If data has user property use it, otherwise data itself is the user object
+        const user = data.user || data
         this.user = user
         localStorage.setItem(USER_KEY, JSON.stringify(this.user))
         this.loading = false
@@ -41,8 +43,11 @@ export const useAuthStore = defineStore('auth', {
         if (email) payload.email = email
         if (password) payload.password = password
         // Backend should set HttpOnly cookie on successful login and return user
-        const res = await api.post('/api/auth/login', payload)
-        const user = res.user || (res.id ? { id: res.id, username: res.username, email: res.email } : res)
+        const res = await api.post('/auth/login', payload)
+        const data = res.data
+        // If data has user property use it, otherwise data itself is the user object
+        // Don't reconstruct the object to avoid losing fields like balance
+        const user = data.user || data
         if (user) {
           this.user = user
           localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -56,6 +61,14 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    updateUser(userData) {
+      if (userData) {
+        // Merge with existing user data to preserve other fields if needed
+        this.user = { ...this.user, ...userData }
+        localStorage.setItem(USER_KEY, JSON.stringify(this.user))
+      }
+    },
+
     setUser(user) {
       this.user = user
       if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -64,7 +77,7 @@ export const useAuthStore = defineStore('auth', {
 
     logout() {
       // Call backend logout to clear cookie if endpoint exists
-      try { api.post('/api/auth/logout') } catch {}
+      try { api.post('/auth/logout') } catch { }
       this.user = null
       localStorage.removeItem(USER_KEY)
     },

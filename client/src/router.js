@@ -54,4 +54,23 @@ const router = createRouter({
   routes,
 });
 
+import { useAuthStore } from './stores/authStore';
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  const publicPages = ['/login', '/register', '/'];
+  const authRequired = !publicPages.includes(to.path);
+
+  // Check store state instead of cookie (since cookie is HttpOnly)
+  if (authRequired && !authStore.isAuthenticated) {
+    return next('/login');
+  }
+
+  if ((to.path === '/login' || to.path === '/register') && authStore.isAuthenticated) {
+    return next('/home');
+  }
+
+  next();
+});
+
 export default router;

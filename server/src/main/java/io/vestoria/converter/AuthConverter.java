@@ -12,6 +12,10 @@ public class AuthConverter {
                 .id(entity.getId().toString())
                 .username(entity.getUsername())
                 .email(entity.getEmail())
+                .balance(entity.getBalance())
+                .level(entity.getLevel())
+                .xp(entity.getXp())
+                .isAdmin(entity.getIsAdmin())
                 .build();
     }
 }

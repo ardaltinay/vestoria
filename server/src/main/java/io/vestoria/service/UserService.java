@@ -6,6 +6,7 @@ import io.vestoria.entity.UserEntity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import io.vestoria.enums.BuildingStatus;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
@@ -54,8 +55,8 @@ public class UserService {
     if (dailyEarnings == null)
       dailyEarnings = BigDecimal.ZERO;
 
-    long activeBusinesses = buildingRepository.countByOwnerAndStatus(user, "ACTIVE");
-    long totalActiveBusinesses = buildingRepository.countByStatus("ACTIVE");
+    long activeBusinesses = buildingRepository.countByOwnerAndStatus(user, BuildingStatus.ACTIVE);
+    long totalActiveBusinesses = buildingRepository.countByStatus(BuildingStatus.ACTIVE);
 
     double marketShare = 0.0;
     if (totalActiveBusinesses > 0) {

@@ -1,6 +1,7 @@
 package io.vestoria;
 
 import java.math.BigDecimal;
+import java.util.TimeZone;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -11,16 +12,25 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import io.vestoria.entity.UserEntity;
 import io.vestoria.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching
+@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class VestoriaApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(VestoriaApplication.class, args);
+	}
+
+	@PostConstruct
+	public void init() {
+		TimeZone.setDefault(TimeZone.getTimeZone("Europe/Istanbul"));
 	}
 
 	@Bean
@@ -32,7 +42,7 @@ public class VestoriaApplication {
 						.username("admin")
 						.password(passwordEncoder.encode("admin123"))
 						.email("admin@vestoria.io")
-						.balance(BigDecimal.valueOf(1000000))
+						.balance(BigDecimal.valueOf(999_999_999_999_999L))
 						.level(100)
 						.xp(0L)
 						.isAdmin(true)

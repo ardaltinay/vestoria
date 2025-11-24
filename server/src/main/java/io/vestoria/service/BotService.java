@@ -8,6 +8,7 @@ import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.ItemCategory;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.TransactionType;
+import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.TransactionRepository;
@@ -19,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,92 +36,113 @@ public class BotService {
   private final UserService userService;
   private final MarketService marketService;
 
-  @Scheduled(fixedRate = 600000) // Every 10 minutes
+  @Scheduled(fixedRate = 60000) // Every minute
+  @Transactional
+  public void checkExpiredSales() {
+    List<BuildingEntity> expiredSales = buildingRepository
+        .findAllByIsSellingTrueAndSalesEndsAtBefore(LocalDateTime.now());
+    for (BuildingEntity shop : expiredSales) {
+      processShopSales(shop.getId());
+    }
+  }
+
   @Transactional
   @CacheEvict(value = { "globalSupply", "globalDemand" }, allEntries = true)
-  public void buyFromShops() {
-    List<BuildingEntity> shops = buildingRepository.findAllShopsWithItems();
+  public void processShopSales(UUID buildingId) {
+    BuildingEntity shop = buildingRepository.findById(buildingId)
+        .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));
 
-    for (BuildingEntity shop : shops) {
-      List<ItemEntity> itemsForSale = shop.getItems();
+    if (shop.getType() != BuildingType.SHOP) {
+      return;
+    }
 
-      for (ItemEntity item : itemsForSale) {
-        if (item.getQuantity() > 0) {
+    List<ItemEntity> itemsForSale = shop.getItems();
+    BigDecimal totalBatchEarnings = BigDecimal.ZERO;
 
-          long globalSupply = marketService.calculateGlobalSupply(item.getName());
+    for (ItemEntity item : itemsForSale) {
+      if (item.getQuantity() > 0) {
 
-          long globalDemand = marketService.calculateGlobalDemand(item.getName());
+        long globalSupply = marketService.calculateGlobalSupply(item.getName());
 
-          ItemTier tier = determineTier(item);
-          item.setTier(tier);
+        long globalDemand = marketService.calculateGlobalDemand(item.getName());
 
-          item.setSupply(globalSupply);
-          item.setDemand(globalDemand);
+        ItemTier tier = determineTier(item);
+        item.setTier(tier);
 
-          double supplyVal = Math.max(globalSupply, 1.0);
-          double demandVal = (double) globalDemand;
-          double tierValue = tier.value; // 0.5, 1.0, 1.5, 2.0
+        item.setSupply(globalSupply);
+        item.setDemand(globalDemand);
 
-          double rawRatio = demandVal / supplyVal;
-          double baseScore = rawRatio * tierValue;
+        double supplyVal = Math.max(globalSupply, 1.0);
+        double demandVal = (double) globalDemand;
+        double tierValue = tier.value; // 0.5, 1.0, 1.5, 2.0
 
-          double finalScore = Math.min(baseScore, 100.0);
+        double rawRatio = demandVal / supplyVal;
+        double baseScore = rawRatio * tierValue;
 
-          BigDecimal qualityScore = BigDecimal.valueOf(finalScore);
-          item.setQualityScore(qualityScore);
+        double finalScore = Math.min(baseScore, 100.0);
 
-          double buyPercentage = finalScore / 100.0;
+        double buyPercentage = finalScore / 100.0;
 
-          int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
+        int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
 
-          if (quantityToBuy == 0 && buyPercentage > 0.01) {
-            quantityToBuy = 1;
-          }
+        if (quantityToBuy == 0 && buyPercentage > 0.01) {
+          quantityToBuy = 1;
+        }
 
-          if (quantityToBuy > item.getQuantity()) {
-            quantityToBuy = item.getQuantity();
-          }
+        if (quantityToBuy > item.getQuantity()) {
+          quantityToBuy = item.getQuantity();
+        }
 
-          if (quantityToBuy > 0) {
-            BigDecimal pricePerUnit = item.getPrice();
-            BigDecimal totalEarnings = pricePerUnit.multiply(BigDecimal.valueOf(quantityToBuy));
+        if (quantityToBuy > 0) {
+          BigDecimal pricePerUnit = item.getPrice();
+          BigDecimal totalEarnings = pricePerUnit.multiply(BigDecimal.valueOf(quantityToBuy));
+          totalBatchEarnings = totalBatchEarnings.add(totalEarnings);
 
-            UserEntity owner = shop.getOwner();
-            owner.setBalance(owner.getBalance().add(totalEarnings));
-            userRepository.save(owner);
+          UserEntity owner = shop.getOwner();
+          owner.setBalance(owner.getBalance().add(totalEarnings));
+          userRepository.save(owner);
 
-            // Update XP (Progression) via UserService
-            userService.addXp(owner, quantityToBuy * 10L); // 10 XP per item
+          // Update XP (Progression) via UserService
+          userService.addXp(owner, quantityToBuy * 10L); // 10 XP per item
 
-            // Remove items
-            item.setQuantity(item.getQuantity() - quantityToBuy);
-            itemRepository.save(item);
+          // Remove items
+          item.setQuantity(item.getQuantity() - quantityToBuy);
+          itemRepository.save(item);
 
-            // Record Transaction
-            TransactionEntity transaction = TransactionEntity.builder()
-                .type(TransactionType.SYSTEM_SELL)
-                .buyer(null) // System is buyer
-                .seller(owner)
-                .marketItem(null) // Direct sale
-                .price(totalEarnings)
-                .amount(quantityToBuy)
-                .itemName(item.getName()) // Store item name
-                .build();
-            @SuppressWarnings({ "null", "unused" })
-            TransactionEntity saved = transactionRepository.save(transaction);
+          // Fetch Bot User for System Buys
+          UserEntity botUser = userRepository.findByUsername("market_bot")
+              .orElseThrow(() -> new ResourceNotFoundException("Market Bot user not found"));
 
-            // Create Notification
-            String notificationMessage = String.format(
-                "%s %s dükkanından %d adet %s satın alındı. Kazanç: %s (Puan: %.2f)",
-                owner.getUsername(), shop.getSubType(), quantityToBuy, item.getName(), totalEarnings, finalScore);
-            notificationService.createNotification(owner, notificationMessage);
-          } else {
-            // Just save the score if we didn't buy anything
-            itemRepository.save(item);
-          }
+          // Record Transaction
+          TransactionEntity transaction = TransactionEntity.builder()
+              .type(TransactionType.SYSTEM_SELL)
+              .buyer(botUser) // System (Bot) is buyer
+              .seller(owner)
+              .marketItem(null) // Direct sale
+              .price(totalEarnings)
+              .amount(quantityToBuy)
+              .itemName(item.getName()) // Store item name
+              .build();
+          @SuppressWarnings({ "null", "unused" })
+          TransactionEntity saved = transactionRepository.save(transaction);
+
+          // Create Notification
+          String notificationMessage = String.format(
+              "%s %s dükkanından %d adet %s satın alındı. Kazanç: %s (Puan: %.2f)",
+              owner.getUsername(), shop.getSubType(), quantityToBuy, item.getName(), totalEarnings, finalScore);
+          notificationService.createNotification(owner, notificationMessage);
+        } else {
+          // Just save the score if we didn't buy anything
+          itemRepository.save(item);
         }
       }
     }
+
+    // Reset shop status
+    shop.setIsSelling(false);
+    shop.setSalesEndsAt(null);
+    shop.setLastRevenue(totalBatchEarnings);
+    buildingRepository.save(shop);
   }
 
   private ItemTier determineTier(ItemEntity item) {

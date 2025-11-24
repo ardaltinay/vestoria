@@ -9,7 +9,7 @@
       <!-- Card -->
       <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
         <div class="text-center mb-8">
-          <h2 class="text-2xl font-bold text-slate-900">Tekrar Hoşgeldiniz</h2>
+          <h2 class="text-2xl font-bold text-slate-900">Hoşgeldiniz</h2>
           <p class="text-slate-500 mt-2">Hesabınıza giriş yaparak imparatorluğunuzu yönetmeye devam edin.</p>
         </div>
 
@@ -21,7 +21,7 @@
               type="text" 
               class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
               :class="{ 'border-red-500 focus:ring-red-500 focus:border-red-500': errors.username }"
-              placeholder="Girişimci adınız"
+              placeholder="Kullanıcı adınız"
             />
             <p v-if="errors.username" class="text-xs text-red-500 mt-1">{{ errors.username }}</p>
           </div>
@@ -110,8 +110,8 @@ async function handleLogin() {
 
   try {
     loading.value = true
-    const response = await AuthService.login(form.value)
-    authStore.login(response.data)
+    // Use authStore directly to handle state and API call in one place
+    await authStore.login(form.value)
     router.push('/home')
   } catch (error) {
     console.error('Login failed:', error)

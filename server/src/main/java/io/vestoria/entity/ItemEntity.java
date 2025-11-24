@@ -19,6 +19,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "items", indexes = {
         @Index(name = "idx_items_name", columnList = "name"),
@@ -52,6 +54,7 @@ public class ItemEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ItemCategory category;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "building_id")
     private BuildingEntity building;

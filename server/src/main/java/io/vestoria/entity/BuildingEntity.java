@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -62,4 +63,10 @@ public class BuildingEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemEntity> items;
+
+    private LocalDateTime productionEndsAt;
+    private LocalDateTime salesEndsAt;
+    private Boolean isProducing;
+    private Boolean isSelling;
+    private BigDecimal lastRevenue;
 }

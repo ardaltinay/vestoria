@@ -94,7 +94,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import UserService from '../services/UserService'
-import NotificationService from '../services/NotificationService'
+import { useNotificationStore } from '../stores/notificationStore'
+import { storeToRefs } from 'pinia'
 import { useToast } from '../composables/useToast'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 import { 
@@ -103,9 +104,11 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
+const { notifications } = storeToRefs(notificationStore)
+
 const username = computed(() => authStore.user?.username || 'Oyuncu')
 const dashboardStats = ref({})
-const notifications = ref([])
 const showWizard = ref(false)
 const wizardType = ref('SHOP')
 const { addToast } = useToast()
@@ -116,15 +119,6 @@ const fetchDashboardStats = async () => {
     dashboardStats.value = response.data
   } catch (error) {
     console.error('Failed to fetch dashboard stats', error)
-  }
-}
-
-const fetchNotifications = async () => {
-  try {
-    const response = await NotificationService.getNotifications()
-    notifications.value = response.data
-  } catch (error) {
-    console.error('Failed to fetch notifications', error)
   }
 }
 
@@ -176,6 +170,9 @@ const handleCreate = async (payload) => {
 
 onMounted(() => {
   fetchDashboardStats()
-  fetchNotifications()
+  // Notifications are fetched by Home.vue (parent), so we just use the store state
+  if (notifications.value.length === 0) {
+      notificationStore.fetchNotifications()
+  }
 })
 </script>
