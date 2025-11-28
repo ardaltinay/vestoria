@@ -29,15 +29,15 @@ public enum BuildingSubType {
   GENERIC(null, null, null, "Standart", "Standart üretim tesisi.");
 
   private final BuildingType parentType;
-  private final List<String> producedItemName;
+  private final List<String> producedItemNames;
   private final List<String> marketableProducts;
   private final String label;
   private final String description;
 
-  BuildingSubType(BuildingType parentType, List<String> producedItemName, List<String> marketableProducts, String label,
+  BuildingSubType(BuildingType parentType, List<String> producedItemNames, List<String> marketableProducts, String label,
       String description) {
     this.parentType = parentType;
-    this.producedItemName = producedItemName;
+    this.producedItemNames = producedItemNames;
     this.marketableProducts = marketableProducts;
     this.label = label;
     this.description = description;

@@ -81,30 +81,10 @@
             Henüz ürün yok.
           </div>
           <div v-else class="overflow-x-auto -mx-4 sm:mx-0">
-            <div class="inline-block min-w-full align-middle">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 border-y border-gray-200">
-                  <tr>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Ürün</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Miktar</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Kalite</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Birim Maliyet</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                  <tr v-for="prodItem in item.items" :key="prodItem.id" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">{{ prodItem.subType ? gameDataStore.getItem(prodItem.subType)?.name : prodItem.name }}</td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">{{ prodItem.quantity }}</td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3">
-                      <StarRating :score="prodItem.qualityScore" size="xs" />
-                    </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">
-                      <Currency :amount="prodItem.price" :icon-size="14" />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <BuildingInventoryTable 
+              :items="item.items" 
+              @transfer="startWithdraw" 
+            />
           </div>
         </div>
 
@@ -221,6 +201,15 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Withdraw Modal -->
+    <BuildingTransferModal
+      :show="showWithdrawModal"
+      :item="withdrawingItem"
+      v-model:quantity="withdrawQuantity"
+      @close="showWithdrawModal = false"
+      @confirm="confirmWithdraw"
+    />
         </div>
       </div>
     </div>
@@ -350,6 +339,8 @@ import { XMarkIcon } from '@heroicons/vue/24/outline'
 import Currency from "../../components/Currency.vue"
 import SelectBox from "../../components/SelectBox.vue"
 import StarRating from "../../components/StarRating.vue"
+import BuildingInventoryTable from "../../components/BuildingInventoryTable.vue"
+import BuildingTransferModal from "../../components/BuildingTransferModal.vue"
 
 const route = useRoute()
 const { addToast } = useToast()
@@ -387,6 +378,12 @@ const updateTimer = async () => {
   
   const end = new Date(item.value.productionEndsAt).getTime()
   const now = new Date().getTime()
+
+  if (isNaN(end)) {
+    timeLeft.value = ''
+    return
+  }
+
   const diff = end - now
   
   if (diff <= 0) {
@@ -396,19 +393,28 @@ const updateTimer = async () => {
       timerInterval = null
     }
     
-    try {
-      await BuildingService.completeProduction(item.value.id)
-      addToast('Üretim tamamlandı!', 'success')
-      await store.load()
-    } catch (error) {
-      console.error('Auto-complete production failed:', error)
-    }
+    setTimeout(async () => {
+      try {
+        await BuildingService.completeProduction(item.value.id)
+        addToast('Üretim toplandı!', 'success')
+        await store.load()
+      } catch (error) {
+        console.error(error)
+      }
+    }, 1000)
+    
     return
-  } else {
-    const minutes = Math.floor(diff / 60000)
-    const seconds = Math.floor((diff % 60000) / 1000)
-    timeLeft.value = `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
+  
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+  
+  if (isNaN(minutes) || isNaN(seconds)) {
+    timeLeft.value = ''
+    return
+  }
+
+  timeLeft.value = `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 
@@ -474,6 +480,30 @@ const confirmUpgrade = async () => {
     console.error(error)
     const message = error.response?.data?.message || 'Bina yükseltilemedi'
     addToast(message, 'error')
+  }
+}
+
+const showWithdrawModal = ref(false)
+const withdrawingItem = ref(null)
+const withdrawQuantity = ref(1)
+
+const startWithdraw = (item) => {
+  withdrawingItem.value = item
+  withdrawQuantity.value = item.quantity
+  showWithdrawModal.value = true
+}
+
+const confirmWithdraw = async () => {
+  if (!withdrawingItem.value || withdrawQuantity.value <= 0) return
+  
+  try {
+    await BuildingService.withdraw(item.value.id, withdrawingItem.value.name, withdrawQuantity.value)
+    addToast('Ürünler envantere aktarıldı', 'success')
+    showWithdrawModal.value = false
+    await store.load()
+  } catch (error) {
+    console.error(error)
+    // Global interceptor handles the toast
   }
 }
 

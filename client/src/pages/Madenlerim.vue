@@ -50,7 +50,7 @@
                 <h3 class="font-bold text-gray-900 group-hover:text-orange-600 transition-colors text-sm sm:text-base truncate">{{ mine.name || it.subType }}</h3>
                 <p class="text-xs text-gray-500 truncate">{{ mine.subType }}</p>
                 <span class="inline-block mt-1 text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
-                  Seviye {{ mine.level }}
+                  Seviye {{ convertTierToTr(mine.tier) }}
                 </span>
               </div>
             </div>
@@ -89,10 +89,7 @@
         <div class="px-4 sm:px-5 pb-4 sm:pb-5">
           <button class="w-full px-4 py-2.5 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors shadow-sm text-sm">
             <span class="flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
+              <WrenchScrewdriverIcon class="w-4 h-4" />
               Yönet
             </span>
           </button>
@@ -118,7 +115,7 @@ import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
 import Currency from '../components/Currency.vue'
-import { PlusIcon, MapIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, WrenchScrewdriverIcon, MapIcon } from '@heroicons/vue/24/outline'
 
 const store = useMinesStore()
 const authStore = useAuthStore()
@@ -145,6 +142,19 @@ async function handleCreate(payload) {
     await authStore.fetchUser()
   } catch (error) {
     console.error('Failed to create mine:', error)
+  }
+}
+
+const convertTierToTr = (tier) => {
+  switch (tier) {
+    case 'SMALL':
+      return 'KÜÇÜK'
+    case 'MEDIUM':
+      return 'ORTA'
+    case 'LARGE':
+      return 'BÜYÜK'
+    default:
+      return 'Bilinmeyen'
   }
 }
 

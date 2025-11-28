@@ -81,60 +81,15 @@
           </div>
           <div v-else class="overflow-x-auto -mx-4 sm:mx-0">
             <div class="inline-block min-w-full align-middle">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 border-y border-gray-200">
-                  <tr>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Ürün</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Miktar</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm hidden sm:table-cell">Kalite</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm hidden md:table-cell">Birim Maliyet</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-700 text-xs sm:text-sm">Satış Fiyatı</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 bg-white">
-                  <tr v-for="item in shop.items" :key="item.id" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">
-                      <div class="flex items-center gap-2">
-                        <ProductIcon :name="item.name" size="sm" />
-                        {{ item.name }}
-                      </div>
-                    </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">{{ item.quantity }}</td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
-                      <StarRating :score="item.qualityScore" size="xs" />
-                    </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm hidden md:table-cell">
-                      <Currency :amount="item.cost || 0" :icon-size="14" />
-                    </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3">
-                      <div v-if="editingItem === item.id" class="flex items-center gap-2">
-                        <input 
-                          v-model.number="newPrice" 
-                          type="number" 
-                          min="0.1" 
-                          step="0.1" 
-                          class="w-20 sm:w-24 px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          @keyup.enter="savePrice(item)"
-                        >
-                        <button @click="savePrice(item)" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs font-medium">Kaydet</button>
-                        <button @click="cancelEditPrice" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-xs font-medium">İptal</button>
-                      </div>
-                      <div v-else class="flex items-center gap-2">
-                        <span class="font-medium text-gray-900 text-xs sm:text-sm">
-                          <Currency :amount="item.price" :icon-size="14" />
-                        </span>
-                        <button 
-                          @click="startEditPrice(item)" 
-                          class="p-1 sm:p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Fiyatı Düzenle"
-                        >
-                          <PencilSquareIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <BuildingInventoryTable 
+                :items="shop.items" 
+                :editing-item="editingItem"
+                :new-price="newPrice"
+                @start-edit-price="startEditPrice"
+                @save-price="savePrice"
+                @cancel-edit-price="cancelEditPrice"
+                @start-withdraw="startWithdraw" 
+              />
             </div>
           </div>
         </div>
@@ -352,6 +307,16 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Transfer Modal -->
+    <BuildingTransferModal
+      :show="showWithdrawModal"
+      :item="withdrawingItem"
+      v-model:quantity="withdrawQuantity"
+      :loading="withdrawing"
+      @close="showWithdrawModal = false"
+      @confirm="confirmWithdraw"
+    />
   </div>
 </template>
 
@@ -367,7 +332,8 @@ import { useToast } from '../../composables/useToast'
 import { XMarkIcon, PencilSquareIcon } from '@heroicons/vue/24/outline'
 import Currency from '../../components/Currency.vue'
 import StarRating from '../../components/StarRating.vue'
-import ProductIcon from '../../components/ProductIcon.vue'
+import BuildingInventoryTable from "../../components/BuildingInventoryTable.vue"
+import BuildingTransferModal from "../../components/BuildingTransferModal.vue"
 
 const route = useRoute()
 const shopsStore = useShopsStore()
@@ -394,8 +360,12 @@ const updateTimer = async () => {
     return
   }
   
-  const end = new Date(shop.value.salesEndsAt).getTime()
-  const now = new Date().getTime()
+  if (isNaN(end)) {
+    console.warn('Invalid salesEndsAt date:', shop.value.salesEndsAt)
+    timeLeft.value = ''
+    return
+  }
+
   const diff = end - now
   
   if (diff <= 0) {
@@ -432,7 +402,13 @@ const updateTimer = async () => {
   
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
   const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-  timeLeft.value = `${minutes}:${seconds.toString().padStart(2, '0')}`
+  
+  if (isNaN(minutes) || isNaN(seconds)) {
+    timeLeft.value = ''
+    return
+  }
+
+  timeLeft.value = `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 const startSales = () => {
@@ -551,6 +527,30 @@ const handleClose = async () => {
   }
 
   showCloseModal.value = true
+}
+
+const showWithdrawModal = ref(false)
+const withdrawingItem = ref(null)
+const withdrawQuantity = ref(1)
+
+const startWithdraw = (item) => {
+  withdrawingItem.value = item
+  withdrawQuantity.value = item.quantity
+  showWithdrawModal.value = true
+}
+
+const confirmWithdraw = async () => {
+  if (!withdrawingItem.value || withdrawQuantity.value <= 0) return
+  
+  try {
+    await BuildingService.withdraw(shop.value.id, withdrawingItem.value.name, withdrawQuantity.value)
+    addToast('Ürünler envantere aktarıldı', 'success')
+    showWithdrawModal.value = false
+    await shopsStore.load()
+  } catch (error) {
+    console.error(error)
+    // Global interceptor handles the toast
+  }
 }
 
 const confirmClose = async () => {

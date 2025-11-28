@@ -4,6 +4,7 @@ import io.vestoria.converter.BuildingConverter;
 import io.vestoria.dto.request.CreateBuildingRequestDto;
 import io.vestoria.dto.request.SetProductionRequestDto;
 import io.vestoria.dto.request.StartProductionRequestDto;
+import io.vestoria.dto.request.WithdrawRequestDto;
 import io.vestoria.dto.response.BuildingProductionTypeDto;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.service.BotService;
@@ -126,6 +127,14 @@ public class BuildingController {
         // Reusing collectProduction logic as it handles finalizing the production batch
         buildingService.collectProduction(buildingId, principal.getName());
         return ResponseEntity.ok("Üretim tamamlandı!");
+    }
+
+    @PostMapping("/{buildingId}/withdraw")
+    public ResponseEntity<?> withdraw(@PathVariable UUID buildingId,
+            @RequestBody WithdrawRequestDto request, Principal principal) {
+        buildingService.withdrawFromBuilding(buildingId, principal.getName(), request.getProductId(),
+                request.getQuantity());
+        return ResponseEntity.ok("Ürünler envantere aktarıldı!");
     }
 
 }

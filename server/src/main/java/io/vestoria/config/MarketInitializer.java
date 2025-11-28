@@ -110,8 +110,6 @@ public class MarketInitializer {
           .qualityScore(BigDecimal.valueOf(50.0))
           .tier(seed.tier)
           .building(warehouse)
-          // .supply(10000L)
-          // .demand(0L)
           .owner(botUser)
           .build();
       itemRepository.save(item);

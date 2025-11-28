@@ -50,8 +50,22 @@ public class GameDataService {
             .build());
       }
 
-      if (subType.getProducedItemName() != null && !subType.getProducedItemName().isEmpty()) {
-        subType.getProducedItemName().forEach(productName -> {
+      if (subType.getProducedItemNames() != null && !subType.getProducedItemNames().isEmpty()) {
+        // Add the building definition itself (e.g. FARM, MINE, GARDEN)
+        // This allows frontend to look up the building type and see what it produces
+        if (!items.stream().anyMatch(i -> i.getId().equals(subType.name()))) {
+          items.add(ItemDefinition.builder()
+              .id(subType.name())
+              .name(subType.getLabel())
+              .label(subType.getLabel())
+              .description(subType.getDescription())
+              .type(subType.getParentType())
+              .producedItemNames(subType.getProducedItemNames())
+              .build());
+        }
+
+        // Add individual items (for display purposes if needed)
+        subType.getProducedItemNames().forEach(productName -> {
           items.add(ItemDefinition.builder()
               .id(productName) // e.g., "Buğday", "Domates"
               .name(productName) // e.g., "Buğday", "Domates"

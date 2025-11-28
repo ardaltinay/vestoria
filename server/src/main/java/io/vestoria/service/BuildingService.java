@@ -10,6 +10,7 @@ import io.vestoria.enums.BuildingSubType;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.UserRepository;
 import io.vestoria.repository.MarketRepository;
+import io.vestoria.repository.ItemRepository;
 import io.vestoria.exception.InsufficientBalanceException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
@@ -36,9 +37,11 @@ public class BuildingService {
     private final UserRepository userRepository;
     private final BuildingConverter buildingConverter;
     private final MarketRepository marketRepository;
+    private final InventoryService inventoryService;
+    private final ItemRepository itemRepository;
 
     @Transactional
-    public void startSales(UUID buildingId, String username) {
+    public void startSales(@NonNull UUID buildingId, @NonNull String username) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
@@ -72,7 +75,7 @@ public class BuildingService {
     }
 
     @Transactional
-    public void startProduction(UUID buildingId, String username, String productId) {
+    public void startProduction(@NonNull UUID buildingId, @NonNull String username, @NonNull String productId) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
 
@@ -137,7 +140,7 @@ public class BuildingService {
     }
 
     @Transactional
-    public void collectProduction(UUID buildingId, String username) {
+    public void collectProduction(@NonNull UUID buildingId, @NonNull String username) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
 
@@ -179,6 +182,47 @@ public class BuildingService {
         // Reset status
         building.setIsProducing(false);
         building.setProductionEndsAt(null);
+        buildingRepository.save(building);
+    }
+
+    @Transactional
+    public void withdrawFromBuilding(@NonNull UUID buildingId, @NonNull String username, @NonNull String productId,
+            int quantity) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
+
+        if (!building.getOwner().getId().equals(user.getId())) {
+            throw new UnauthorizedAccessException("Bu işletme size ait değil");
+        }
+
+        if (quantity <= 0) {
+            throw new BusinessRuleException("Geçersiz miktar");
+        }
+
+        ItemEntity item = building.getItems().stream()
+                .filter(i -> i.getName().equals(productId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
+
+        if (item.getQuantity() < quantity) {
+            throw new BusinessRuleException("En fazla işletmenizde var olan miktar kadar transfer yapabilirsiniz.");
+        }
+
+        // Decrease building stock
+        item.setQuantity(item.getQuantity() - quantity);
+
+        // Add to user inventory
+        inventoryService.addItemToInventory(user, productId, quantity, item.getUnit(), item.getTier(),
+                item.getQualityScore());
+
+        if (item.getQuantity() == 0) {
+            building.getItems().remove(item);
+            itemRepository.delete(item);
+        }
+
         buildingRepository.save(building);
     }
 
@@ -445,8 +489,8 @@ public class BuildingService {
         } else {
             // Production buildings storage
             base = switch (type) {
-                case FARM -> 350;
-                case FACTORY -> 500;
+                case FARM -> 500;
+                case FACTORY -> 600;
                 case MINE -> 800;
                 default -> 250;
             };

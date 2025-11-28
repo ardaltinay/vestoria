@@ -11,6 +11,10 @@
  * @returns {string} Formatted currency string
  */
 export function formatCurrency(amount, options = {}) {
+  if (amount === null || amount === undefined) {
+    return '0'
+  }
+
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
 
   if (isNaN(num)) {

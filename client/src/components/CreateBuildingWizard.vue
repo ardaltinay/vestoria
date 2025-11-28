@@ -135,7 +135,7 @@
               <!-- Building Name Input -->
               <div class="mt-6">
                 <label for="buildingName" class="block text-sm font-medium text-gray-300 mb-2">
-                  İşletme Adı (Opsiyonel)
+                  İşletme Adı <span class="text-red-400">*</span>
                 </label>
                 <input 
                   id="buildingName"
@@ -144,8 +144,9 @@
                   maxlength="50"
                   placeholder="Örn: Merkez Dükkanım, Ana Fabrika"
                   class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  :class="{ 'border-red-500 focus:ring-red-500': showNameError }"
                 />
-                <p class="mt-1 text-xs text-gray-500">Boş bırakırsanız otomatik isim verilecektir</p>
+                <p v-if="showNameError" class="mt-1 text-xs text-red-400">İşletme adı zorunludur.</p>
               </div>
             </div>
             <p class="mt-4 text-sm text-gray-400 text-center">
@@ -211,6 +212,7 @@ const step = ref(isShop.value ? 1 : 2)
 const selectedSubType = ref(null)
 const selectedTier = ref(null)
 const buildingName = ref('')
+const showNameError = ref(false)
 const isSubmitting = ref(false)
 
 onMounted(async () => {
@@ -315,6 +317,12 @@ const formatMoney = (amount) => {
 const confirmCreation = async () => {
   if (isSubmitting.value) return
   
+  if (!buildingName.value.trim()) {
+    showNameError.value = true
+    return
+  }
+  showNameError.value = false
+  
   isSubmitting.value = true
   try {
     emit('create', {
@@ -322,7 +330,7 @@ const confirmCreation = async () => {
       subType: selectedSubType.value,
       tier: selectedTier.value,
       cost: calculateTotalCost(),
-      name: buildingName.value.trim() || null // Send null if empty
+      name: buildingName.value.trim()
     })
   } finally {
     // We don't set isSubmitting to false here because the parent component will likely close the modal

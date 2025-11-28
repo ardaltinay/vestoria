@@ -19,7 +19,7 @@
         </svg>
       </div>
       <h3 class="text-lg font-bold text-slate-900 mb-2">Envanteriniz Boş</h3>
-      <p class="text-slate-500 max-w-md mx-auto">Pazardan ürün satın aldığınızda buraya gelecektir.</p>
+      <p class="text-slate-500 max-w-md mx-auto">Pazardan ürün satın aldığınızda veya işletmenizden ürün transfer ettiğinizde buraya gelecektir.</p>
     </div>
 
     <!-- Content -->
@@ -51,7 +51,7 @@
               </td>
               <td class="px-6 py-4 text-center whitespace-nowrap">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
-                  {{ item.quantity }} {{ itemUnitToTr(item.unit) }}
+                  {{ item.quantity }} {{ getItemUnitTr(item.unit) }}
                 </span>
               </td>
               <td class="px-6 py-4 text-center whitespace-nowrap">
@@ -160,6 +160,7 @@ import StarRating from '../components/StarRating.vue'
 import ProductIcon from '../components/ProductIcon.vue'
 import SelectBox from '../components/SelectBox.vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
+import { getBuildingTypeTr, getBuildingSubTypeTr, getItemUnitTr } from '../utils/translations'
 
 const inventoryStore = useInventoryStore()
 const shopsStore = useShopsStore()
@@ -200,10 +201,13 @@ const filteredBuildings = computed(() => {
   return availableBuildings.value.filter(building => {
     // Find definition for this building type/subtype
     // GameDataService maps subType name (e.g. "MARKET", "FACTORY") to ID
-    const definition = gameDataStore.items.find(d => d.id === building.subType)
+    // Some buildings might not have subType set (null), so we fallback to type (e.g. "FARM", "GARDEN")
+    // which matches the BuildingSubType enum names for those types.
+    const definitionId = building.subType || building.type
+    const definition = gameDataStore.items.find(d => d.id === definitionId)
     
     if (!definition) {
-      console.warn('Definition not found for building subtype:', building.subType)
+      console.warn('Definition not found for building:', building.name, 'ID:', definitionId)
       return false
     }
 
@@ -219,8 +223,22 @@ const filteredBuildings = computed(() => {
     if (building.type === 'FACTORY') {
       const allowed = definition.rawMaterials?.some(i => i.trim() === itemName.trim())
       console.log(`Is raw material for ${building.name}?`, allowed)
-      return allowed
+      // Also check produced items (if we want to allow sending back produced items)
+      // But usually factories take raw materials. 
+      // User said: "envanterden herhangi bir building e transfer yapabilelim fakat yine dükkandaki marketableProduct kontrolü yaptığımız gibi burda da producedItemNames kontrolü yapmalıyız"
+      // This implies for non-shops we check producedItemNames.
+      // But for Factory, it consumes raw materials. 
+      // If the user wants to transfer *produced* items back to factory, we should check producedItemNames.
+      // If the user wants to transfer *raw materials* to factory, we check rawMaterials.
+      // Let's allow BOTH.
+      const isProduced = definition.producedItemNames?.some(i => i.trim() === itemName.trim())
+      return allowed || isProduced
     }
+
+    // For other buildings (FARM, MINE, GARDEN)
+    const isProduced = definition.producedItemNames?.some(i => i.trim() === itemName.trim())
+    console.log(`Is produced by ${building.name}?`, isProduced)
+    return isProduced
     
     return false
   })
@@ -229,7 +247,7 @@ const filteredBuildings = computed(() => {
 const buildingOptions = computed(() => {
   return filteredBuildings.value.map(b => ({
     id: b.id,
-    name: `${b.name || b.subType} (${b.subType})`
+    name: `${b.name || b.subType} (${getBuildingSubTypeTr(b.subType) || getBuildingTypeTr(b.type)})`
   }))
 })
 
@@ -265,20 +283,7 @@ function openTransferModal(item) {
   showTransferModal.value = true
 }
 
-const itemUnitToTr = (unit) => {
-  switch (unit) {
-    case 'PIECE':
-      return 'Adet'
-    case 'KG':
-      return 'Kg'
-    case 'LITER':
-      return 'Litre'
-    case 'METER':
-      return 'Metre'
-    default:
-      return ''
-  }
-}
+
 
 async function confirmTransfer() {
   if (!transferBuildingId.value || !transferQuantity.value) {

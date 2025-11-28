@@ -1,16 +1,18 @@
 package io.vestoria.service;
 
-import io.vestoria.constant.Constants;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingType;
+import io.vestoria.enums.ItemTier;
+import io.vestoria.enums.ItemUnit;
 import io.vestoria.exception.BadRequestException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.UserRepository;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +46,7 @@ public class InventoryService {
   }
 
   @Transactional
-  public ItemEntity updateItemPrice(UUID itemId, BigDecimal price, String username) {
+  public ItemEntity updateItemPrice(@NonNull UUID itemId, BigDecimal price, @NonNull String username) {
     ItemEntity item = itemRepository.findById(itemId)
         .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
@@ -64,7 +66,9 @@ public class InventoryService {
    * Transfer item from centralized inventory to a building
    */
   @Transactional
-  public ItemEntity transferToBuilding(UUID itemId, UUID buildingId, Integer quantity, String username) {
+  @SuppressWarnings("null")
+  public ItemEntity transferToBuilding(@NonNull UUID itemId, @NonNull UUID buildingId, Integer quantity,
+      @NonNull String username) {
     ItemEntity item = itemRepository.findById(itemId)
         .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
@@ -99,16 +103,13 @@ public class InventoryService {
           !building.getSubType().getMarketableProducts().contains(item.getName().trim())) {
         throw new BadRequestException("Bu dükkan bu ürünü kabul etmiyor");
       }
-    } else if (BuildingType.FACTORY.equals(building.getType())) {
-      boolean isRawMaterial = Constants.FACTORY_MAP.values().stream()
-          .flatMap(java.util.List::stream)
-          .anyMatch(ingredient -> ingredient.equals(item.getName().trim()));
-
-      if (!isRawMaterial) {
-        throw new BadRequestException("Bu fabrika bu ürünü hammadde olarak kullanmıyor");
-      }
     } else {
-      throw new BadRequestException("Bu bina ürün kabul etmiyor");
+      // For other buildings (Factory, Farm, Mine, Garden), check if they produce this
+      // item
+      if (building.getSubType().getProducedItemNames() == null ||
+          !building.getSubType().getProducedItemNames().contains(item.getName().trim())) {
+        throw new BadRequestException("Bu işletme bu ürünü kabul etmiyor");
+      }
     }
 
     // Check quantity
@@ -171,6 +172,36 @@ public class InventoryService {
         item.setBuilding(building);
         return itemRepository.save(item);
       }
+    }
+  }
+
+  @Transactional
+  public void addItemToInventory(UserEntity user, String productName, int quantity, ItemUnit unit,
+      ItemTier tier, BigDecimal qualityScore) {
+    // Check if item already exists in centralized inventory (building is null)
+    ItemEntity existingItem = itemRepository.findAllByOwner_UsernameAndBuildingIsNull(user.getUsername()).stream()
+        .filter(i -> {
+          boolean nameMatch = i.getName().trim().equalsIgnoreCase(productName.trim());
+          boolean qualityMatch = i.getQualityScore().compareTo(qualityScore) == 0;
+          return nameMatch && qualityMatch;
+        })
+        .findFirst()
+        .orElse(null);
+
+    if (existingItem != null) {
+      existingItem.setQuantity(existingItem.getQuantity() + quantity);
+      itemRepository.save(existingItem);
+    } else {
+      ItemEntity newItem = ItemEntity.builder()
+          .name(productName)
+          .quantity(quantity)
+          .unit(unit)
+          .tier(tier)
+          .qualityScore(qualityScore)
+          .owner(user)
+          .building(null) // Centralized inventory
+          .build();
+      itemRepository.save(newItem);
     }
   }
 }

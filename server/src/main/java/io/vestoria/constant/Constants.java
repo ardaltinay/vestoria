@@ -13,7 +13,7 @@ public class Constants {
         // Çiftlik Ürünleri
         public static final List<String> FARM_ITEMS = List.of(
                         "İnek", "Koyun", "Keçi", "Deri", "Süt", "Yumurta", "Tavuk", "Hindi", "Yün",
-                        "Pamuk", "Buğday", "Mısır", "Arpa", "Tütün", "Ayçiçek", "Kakao");
+                        "Pamuk", "Buğday", "Mısır", "Arpa", "Tütün", "Ayçiçeği", "Kakao");
 
         // Maden Ürünleri
         public static final List<String> MINE_ITEMS = List.of(
@@ -28,6 +28,7 @@ public class Constants {
                         // Tahıl Ürünleri
                         Map.entry("Ekmek", List.of("Un")),
                         Map.entry("Un", List.of("Buğday")),
+                        Map.entry("Ayçiçek Yağı", List.of("Ayçiçeği")),
 
                         // İçecekler
                         Map.entry("Meyve Suyu", List.of("Meyve")),

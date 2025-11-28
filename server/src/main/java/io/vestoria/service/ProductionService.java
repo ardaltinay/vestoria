@@ -10,7 +10,7 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,8 +82,8 @@ public class ProductionService {
   }
 
   private String getItemNameForBuilding(BuildingEntity building) {
-    if (building.getSubType() != null && building.getSubType().getProducedItemName() != null) {
-      List<String> items = building.getSubType().getProducedItemName();
+    if (building.getSubType() != null && building.getSubType().getProducedItemNames() != null) {
+      List<String> items = building.getSubType().getProducedItemNames();
       /*
        * if (items.length > 0 && items[0] != null && !items[0].isEmpty()) {
        * return items[0]; // Return first produced item

@@ -21,4 +21,5 @@ public class ItemDefinition implements Serializable {
   private BuildingType type;
   private List<String> allowedItems;
   private List<String> rawMaterials;
+  private List<String> producedItemNames;
 }
