@@ -148,12 +148,7 @@ async function handleRegister() {
     router.push('/home')
   } catch (error) {
     console.error('Registration failed:', error)
-    if (error.response?.data?.message) {
-      // Handle backend validation errors if any
-      addToast(error.response.data.message, 'error')
-    } else {
-      addToast('Kayıt işlemi başarısız oldu. Lütfen tekrar deneyiniz.', 'error')
-    }
+    // Error handled globally
   } finally {
     loading.value = false
   }

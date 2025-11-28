@@ -26,13 +26,25 @@
 import { reactive } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useGardensStore } from '../../stores/gardensStore'
+import { useToast } from '../../composables/useToast'
 
 const router = useRouter()
 const store = useGardensStore()
+const { addToast } = useToast()
 const form = reactive({ name: '', description: '', level: 1, revenue: 0 })
 
-function submit() {
-  const created = store.create({ ...form })
-  router.push(`/home/gardens/${created.id}`)
+async function submit() {
+  if (!form.name || !form.name.trim()) {
+    addToast('Lütfen bahçe ismini giriniz', 'warning')
+    return
+  }
+
+  try {
+    const created = await store.create({ ...form })
+    router.push(`/home/gardens/${created.id}`)
+  } catch (error) {
+    console.error(error)
+    addToast('Bahçe oluşturulamadı', 'error')
+  }
 }
 </script>

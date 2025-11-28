@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Data
 public class CreateBuildingRequestDto implements Serializable {
+  private String name;
   private BuildingType type;
   private BuildingTier tier;
   private BuildingSubType subType;

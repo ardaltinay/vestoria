@@ -17,7 +17,7 @@ export const useFactoriesStore = defineStore('factories', {
       return this.items.find(i => i.id === id)
     },
     async create(payload) {
-      const response = await BuildingService.createBuilding('FACTORY', payload.tier, payload.subType || 'TEXTILE')
+      const response = await BuildingService.createBuilding('FACTORY', payload.tier, payload.subType, payload.name)
       await this.load()
       return response.data
     },

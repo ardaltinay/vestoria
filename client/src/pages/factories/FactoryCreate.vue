@@ -26,13 +26,25 @@
 import { reactive } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useFactoriesStore } from '../../stores/factoriesStore'
+import { useToast } from '../../composables/useToast'
 
 const router = useRouter()
 const store = useFactoriesStore()
+const { addToast } = useToast()
 const form = reactive({ name: '', description: '', level: 1, revenue: 0 })
 
-function submit() {
-  const created = store.create({ ...form })
-  router.push(`/home/factories/${created.id}`)
+async function submit() {
+  if (!form.name || !form.name.trim()) {
+    addToast('Lütfen fabrika ismini giriniz', 'warning')
+    return
+  }
+
+  try {
+    const created = await store.create({ ...form })
+    router.push(`/home/factories/${created.id}`)
+  } catch (error) {
+    console.error(error)
+    addToast('Fabrika oluşturulamadı', 'error')
+  }
 }
 </script>

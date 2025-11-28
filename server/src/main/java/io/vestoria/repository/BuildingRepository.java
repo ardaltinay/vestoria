@@ -3,6 +3,7 @@ package io.vestoria.repository;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingStatus;
+import io.vestoria.enums.BuildingType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -23,4 +24,6 @@ public interface BuildingRepository extends JpaRepository<BuildingEntity, UUID> 
   long countByStatus(BuildingStatus status);
 
   List<BuildingEntity> findAllByIsSellingTrueAndSalesEndsAtBefore(LocalDateTime now);
+
+  boolean existsByNameAndTypeAndOwnerId(String name, BuildingType type, UUID ownerId);
 }

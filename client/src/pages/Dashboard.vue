@@ -46,7 +46,13 @@
         <div class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-slate-100">
           <div>
             <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Günlük Kazanç</div>
-            <div class="text-2xl font-bold text-slate-900">{{ dashboardStats.dailyEarnings ? '₺' + dashboardStats.dailyEarnings : '-' }}</div>
+            <div class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <template v-if="dashboardStats.dailyEarnings">
+                <CurrencyIcon :size="24" />
+                {{ formatCurrency(dashboardStats.dailyEarnings) }}
+              </template>
+              <template v-else>-</template>
+            </div>
           </div>
           <div>
             <div class="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">Aktif İşletme</div>
@@ -98,6 +104,8 @@ import { useNotificationStore } from '../stores/notificationStore'
 import { storeToRefs } from 'pinia'
 import { useToast } from '../composables/useToast'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
+import CurrencyIcon from '../components/CurrencyIcon.vue'
+import { formatCurrency } from '../utils/currency'
 import { 
   ArrowRightIcon, 
   ArrowTrendingUpIcon 

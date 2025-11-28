@@ -5,7 +5,6 @@ import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.TransactionEntity;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingType;
-import io.vestoria.enums.ItemCategory;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.TransactionType;
 import io.vestoria.exception.ResourceNotFoundException;
@@ -36,7 +35,7 @@ public class BotService {
   private final UserService userService;
   private final MarketService marketService;
 
-  @Scheduled(fixedRate = 60000) // Every minute
+  // @Scheduled(fixedRate = 60000) // Every minute - DISABLED as per user request
   @Transactional
   public void checkExpiredSales() {
     List<BuildingEntity> expiredSales = buildingRepository
@@ -68,9 +67,6 @@ public class BotService {
 
         ItemTier tier = determineTier(item);
         item.setTier(tier);
-
-        item.setSupply(globalSupply);
-        item.setDemand(globalDemand);
 
         double supplyVal = Math.max(globalSupply, 1.0);
         double demandVal = (double) globalDemand;
@@ -110,8 +106,8 @@ public class BotService {
           itemRepository.save(item);
 
           // Fetch Bot User for System Buys
-          UserEntity botUser = userRepository.findByUsername("market_bot")
-              .orElseThrow(() -> new ResourceNotFoundException("Market Bot user not found"));
+          UserEntity botUser = userRepository.findByUsername("vestoria")
+              .orElseThrow(() -> new ResourceNotFoundException("vestoria user not found"));
 
           // Record Transaction
           TransactionEntity transaction = TransactionEntity.builder()
@@ -147,22 +143,6 @@ public class BotService {
 
   private ItemTier determineTier(ItemEntity item) {
     // Logic based on Category
-    ItemCategory category = item.getCategory();
-    if (category == null)
-      return ItemTier.LOW;
-
-    switch (category) {
-      case RAW_MATERIAL:
-      case FRESH_PRODUCE:
-        return ItemTier.LOW;
-      case FOOD:
-      case CLOTHING: // Intermediate/Processed
-        return ItemTier.MEDIUM;
-      case INDUSTRIAL:
-      case JEWELRY: // High value
-        return ItemTier.SCARCE;
-      default:
-        return ItemTier.LOW;
-    }
+    return ItemTier.LOW;
   }
 }

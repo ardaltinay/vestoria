@@ -26,13 +26,25 @@
 import { reactive } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import ShopService from '../../services/shopService'
+import { useToast } from '../../composables/useToast'
 
 const router = useRouter()
+const { addToast } = useToast()
 const form = reactive({ name: '', description: '', level: 1, revenue: 0 })
 
-function submit() {
-  const created = ShopService.create({ ...form })
-  // yönlendir
-  router.push(`/home/shops/${created.id}`)
+async function submit() {
+  if (!form.name || !form.name.trim()) {
+    addToast('Lütfen dükkan ismini giriniz', 'warning')
+    return
+  }
+
+  try {
+    const response = await ShopService.create({ ...form })
+    const created = response.data || response
+    router.push(`/home/shops/${created.id}`)
+  } catch (error) {
+    console.error(error)
+    addToast('Dükkan oluşturulamadı', 'error')
+  }
 }
 </script>

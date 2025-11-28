@@ -17,7 +17,7 @@ export const useGardensStore = defineStore('gardens', {
       return this.items.find(i => i.id === id)
     },
     async create(payload) {
-      const response = await BuildingService.createBuilding('GARDEN', payload.tier, payload.subType || 'VEGETABLE_GARDEN')
+      const response = await BuildingService.createBuilding('GARDEN', payload.tier, payload.subType, payload.name)
       await this.load()
       return response.data
     },

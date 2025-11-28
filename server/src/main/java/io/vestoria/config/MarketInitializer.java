@@ -8,7 +8,6 @@ import io.vestoria.enums.BuildingStatus;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingTier;
 import io.vestoria.enums.BuildingType;
-import io.vestoria.enums.ItemCategory;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
 import io.vestoria.repository.BuildingRepository;
@@ -22,7 +21,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -37,28 +35,20 @@ public class MarketInitializer {
   private final ItemRepository itemRepository;
   private final MarketRepository marketRepository;
   private final PasswordEncoder passwordEncoder;
-  private final JdbcTemplate jdbcTemplate;
 
   @Bean
   public CommandLineRunner initMarket() {
     return args -> {
-      // Fix constraint for new Enum values (LITER, METER)
-      try {
-        jdbcTemplate.execute("ALTER TABLE items DROP CONSTRAINT IF EXISTS items_unit_check");
-      } catch (Exception e) {
-        System.out.println("Constraint drop failed or not needed: " + e.getMessage());
-      }
-
       // 1. Create Bot User
-      if (userRepository.findByUsername("market_bot").isPresent()) {
+      if (userRepository.findByUsername("vestoria").isPresent()) {
         return; // Already initialized
       }
 
       UserEntity botUser = UserEntity.builder()
-          .username("market_bot")
-          .password(passwordEncoder.encode("bot_secret_password_123"))
+          .username("vestoria")
+          .password(passwordEncoder.encode("vestoria_123"))
           .email("bot@vestoria.io")
-          .balance(BigDecimal.valueOf(1_000_000_000)) // Rich bot
+          .balance(BigDecimal.valueOf(900_000_000)) // Rich bot
           .level(100)
           .xp(0L)
           .isAdmin(false)
@@ -67,13 +57,13 @@ public class MarketInitializer {
 
       // 2. Create Bot Warehouse (Factory)
       BuildingEntity warehouse = BuildingEntity.builder()
+          .name("Vestoria Building")
           .owner(botUser)
           .type(BuildingType.FACTORY)
           .tier(BuildingTier.LARGE)
           .subType(BuildingSubType.GENERIC)
-          .level(3)
           .productionRate(BigDecimal.ZERO)
-          .maxSlots(100)
+          .maxSlots(10000)
           .status(BuildingStatus.ACTIVE)
           .cost(BigDecimal.ZERO)
           .maxStock(100000)
@@ -88,29 +78,27 @@ public class MarketInitializer {
   private void seedItems(BuildingEntity warehouse, UserEntity botUser) {
     List<SeedItem> items = Arrays.asList(
         // Market Items (Food)
-        new SeedItem("Ekmek", ItemUnit.PIECE, 5.0, ItemCategory.FOOD, ItemTier.LOW),
-        new SeedItem("Su", ItemUnit.LITER, 2.0, ItemCategory.FOOD, ItemTier.LOW),
-        new SeedItem("Peynir", ItemUnit.KG, 150.0, ItemCategory.FOOD, ItemTier.LOW),
+        new SeedItem("Ekmek", ItemUnit.PIECE, 5.0, ItemTier.LOW),
+        new SeedItem("Su", ItemUnit.LITER, 2.0, ItemTier.LOW),
+        new SeedItem("Peynir", ItemUnit.KG, 50.0, ItemTier.MEDIUM),
 
         // Greengrocer Items (Fresh Produce)
-        new SeedItem("Domates", ItemUnit.KG, 25.0, ItemCategory.FRESH_PRODUCE, ItemTier.LOW),
-        new SeedItem("Elma", ItemUnit.KG, 30.0, ItemCategory.FRESH_PRODUCE, ItemTier.LOW),
-        new SeedItem("Patates", ItemUnit.KG, 15.0, ItemCategory.FRESH_PRODUCE, ItemTier.LOW),
+        new SeedItem("Domates", ItemUnit.KG, 10.0, ItemTier.LOW),
+        new SeedItem("Elma", ItemUnit.KG, 15.0, ItemTier.LOW),
+        new SeedItem("Patates", ItemUnit.KG, 8.0, ItemTier.LOW),
 
         // Clothing Items
-        new SeedItem("Tişört", ItemUnit.PIECE, 250.0, ItemCategory.CLOTHING, ItemTier.LOW),
-        new SeedItem("Pantolon", ItemUnit.PIECE, 400.0, ItemCategory.CLOTHING, ItemTier.LOW),
-        new SeedItem("Ceket", ItemUnit.PIECE, 800.0, ItemCategory.CLOTHING, ItemTier.MEDIUM),
+        new SeedItem("Kumaş", ItemUnit.PIECE, 25.0, ItemTier.LOW),
+        new SeedItem("Ayakkabı  ", ItemUnit.PIECE, 150.0, ItemTier.HIGH),
+        new SeedItem("Ceket", ItemUnit.PIECE, 200.0, ItemTier.HIGH),
 
         // Jewelry Items
-        new SeedItem("Altın Kolye", ItemUnit.PIECE, 5000.0, ItemCategory.JEWELRY, ItemTier.SCARCE),
-        new SeedItem("Gümüş Yüzük", ItemUnit.PIECE, 1500.0, ItemCategory.JEWELRY, ItemTier.SCARCE),
+        new SeedItem("Altın Kolye", ItemUnit.PIECE, 800.0, ItemTier.SCARCE),
+        new SeedItem("Gümüş Yüzük", ItemUnit.PIECE, 450.0, ItemTier.SCARCE),
 
         // Industrial / Raw Materials
-        new SeedItem("Demir", ItemUnit.KG, 50.0, ItemCategory.RAW_MATERIAL, ItemTier.LOW),
-        new SeedItem("Çelik", ItemUnit.KG, 120.0, ItemCategory.INDUSTRIAL, ItemTier.LOW),
-        new SeedItem("Kumaş", ItemUnit.METER, 80.0, ItemCategory.RAW_MATERIAL, ItemTier.LOW),
-        new SeedItem("Odun", ItemUnit.KG, 10.0, ItemCategory.RAW_MATERIAL, ItemTier.LOW));
+        new SeedItem("Demir", ItemUnit.KG, 50.0, ItemTier.MEDIUM),
+        new SeedItem("Çelik", ItemUnit.KG, 120.0, ItemTier.MEDIUM));
 
     for (SeedItem seed : items) {
       // Create Item in Warehouse
@@ -119,12 +107,12 @@ public class MarketInitializer {
           .unit(seed.unit)
           .price(BigDecimal.valueOf(seed.price))
           .quantity(10000) // Huge stock
-          .qualityScore(BigDecimal.valueOf(100.0)) // Perfect quality
+          .qualityScore(BigDecimal.valueOf(50.0))
           .tier(seed.tier)
-          .category(seed.category)
           .building(warehouse)
-          .supply(10000L)
-          .demand(0L)
+          // .supply(10000L)
+          // .demand(0L)
+          .owner(botUser)
           .build();
       itemRepository.save(item);
 
@@ -132,12 +120,25 @@ public class MarketInitializer {
       MarketEntity listing = MarketEntity.builder()
           .seller(botUser)
           .item(item)
-          .price(BigDecimal.valueOf(seed.price)) // Sell at base price
-          .quantity(5000) // List half of stock
+          .price(BigDecimal.valueOf(seed.price))
+          .quantity(item.getQuantity())
           .isActive(true)
           .build();
       marketRepository.save(listing);
     }
+  }
+
+  private ItemTier calculateTier(double price) {
+    if (price > 400) {
+      return ItemTier.SCARCE;
+    }
+    if (price > 200) {
+      return ItemTier.HIGH;
+    }
+    if (price > 75) {
+      return ItemTier.MEDIUM;
+    }
+    return ItemTier.LOW;
   }
 
   @Value
@@ -145,7 +146,6 @@ public class MarketInitializer {
     String name;
     ItemUnit unit;
     double price;
-    ItemCategory category;
     ItemTier tier;
   }
 }

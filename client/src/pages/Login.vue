@@ -115,7 +115,7 @@ async function handleLogin() {
     router.push('/home')
   } catch (error) {
     console.error('Login failed:', error)
-    addToast('Giriş başarısız. Kullanıcı adı veya şifre hatalı.', 'error')
+    // Error handled globally
   } finally {
     loading.value = false
   }

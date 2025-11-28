@@ -17,10 +17,12 @@ import java.util.UUID;
 @Builder
 public class BuildingResponseDto implements Serializable {
   private UUID id;
+  private String name;
+  private String label;
+  private String description;
   private BuildingType type;
   private BuildingTier tier;
   private BuildingSubType subType;
-  private Integer level;
   private BigDecimal productionRate;
   private Integer maxStock;
   private Integer maxSlots;

@@ -17,7 +17,7 @@ export const useFarmsStore = defineStore('farms', {
       return this.items.find(i => i.id === id)
     },
     async create(payload) {
-      const response = await BuildingService.createBuilding('FARM', payload.tier, payload.subType || 'LIVESTOCK')
+      const response = await BuildingService.createBuilding('FARM', payload.tier, payload.subType, payload.name)
       await this.load()
       return response.data
     },

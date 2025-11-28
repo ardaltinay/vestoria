@@ -1,8 +1,8 @@
 import api from './api';
 
 export default {
-  createBuilding(type, tier, subType) {
-    return api.post('/build/create', { type, tier, subType });
+  createBuilding(type, tier, subType, name = null) {
+    return api.post('/build/create', { type, tier, subType, name });
   },
   upgrade(buildingId) {
     return api.put(`/build/upgrade/${buildingId}`);
@@ -23,7 +23,7 @@ export default {
     // But BuildingService has getUserBuildings(userId).
     // We should add an endpoint for it in BuildingController.
     // For now, I'll add a placeholder or use what I have.
-    return api.get('/build/list'); // Need to implement this in backend if not exists
+    return api.get(`/build/list?t=${new Date().getTime()}`); // Prevent caching
   },
   getBuildingConfigs() {
     return api.get('/build/config');
@@ -34,10 +34,16 @@ export default {
   startSales(buildingId) {
     return api.post(`/build/${buildingId}/start-sales`);
   },
-  startProduction(buildingId) {
-    return api.post(`/build/${buildingId}/start-production`);
+  startProduction(buildingId, productId) {
+    return api.post(`/build/${buildingId}/start-production`, { productId });
   },
   collect(buildingId) {
     return api.post(`/build/${buildingId}/collect`);
+  },
+  completeSale(buildingId) {
+    return api.post(`/build/${buildingId}/complete-sale`);
+  },
+  completeProduction(buildingId) {
+    return api.post(`/build/${buildingId}/complete-production`);
   }
 };

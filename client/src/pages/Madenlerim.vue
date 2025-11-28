@@ -20,7 +20,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="items.length === 0" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+    <div v-else-if="mines.length === 0" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
       <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <MapIcon class="w-8 h-8 text-slate-400" />
       </div>
@@ -34,9 +34,9 @@
     <!-- Content Grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       <div 
-        v-for="it in items" 
-        :key="it.id" 
-        @click="$router.push(`/home/mines/${it.id}`)"
+        v-for="mine in mines" 
+        :key="mine.id" 
+        @click="$router.push(`/home/mines/${mine.id}`)"
         class="group cursor-pointer bg-white rounded-lg shadow-sm border-l-4 border-orange-500 hover:shadow-lg transition-all duration-200"
       >
         <!-- Header -->
@@ -47,9 +47,10 @@
                 <MapIcon class="w-6 h-6 text-orange-600" />
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="font-bold text-gray-900 group-hover:text-orange-600 transition-colors text-sm sm:text-base truncate">{{ it.subType }}</h3>
+                <h3 class="font-bold text-gray-900 group-hover:text-orange-600 transition-colors text-sm sm:text-base truncate">{{ mine.name || it.subType }}</h3>
+                <p class="text-xs text-gray-500 truncate">{{ mine.subType }}</p>
                 <span class="inline-block mt-1 text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
-                  Seviye {{ it.level }}
+                  Seviye {{ mine.level }}
                 </span>
               </div>
             </div>
@@ -59,29 +60,28 @@
 
         <!-- Content -->
         <div class="p-4 sm:p-5 space-y-4">
-          <p class="text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">{{ it.description || 'Açıklama bulunmuyor.' }}</p>
+          <p class="text-xs sm:text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">{{ mine.description || 'Açıklama bulunmuyor.' }}</p>
           
           <!-- Stats Grid -->
           <div class="grid grid-cols-2 gap-2 sm:gap-3">
             <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
               <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Gelir /dak</div>
-              <div class="text-base sm:text-lg font-bold text-gray-900">₺{{ it.revenue || 0 }}</div>
+              <div class="text-base sm:text-lg font-bold text-gray-900">
+                <Currency :amount="mine.revenue || 0" :icon-size="16" />
+              </div>
             </div>
             <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
               <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Ürün Çeşidi</div>
-              <div class="text-base sm:text-lg font-bold text-gray-900">{{ it.items?.length || 0 }}</div>
+              <div class="text-base sm:text-lg font-bold text-gray-900">{{ mine.items?.length || 0 }}</div>
             </div>
           </div>
 
           <!-- Progress Bar -->
           <div>
-            <div class="flex justify-between text-xs mb-1.5">
-              <span class="text-gray-500 font-medium">Çıkarım</span>
-              <span class="font-bold text-orange-600">30%</span>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-              <div class="bg-orange-500 h-2 rounded-full" style="width: 30%"></div>
-            </div>
+              <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div class="bg-orange-500 h-2 rounded-full transition-all" :style="{ width: `${(mine.currentStock / mine.maxStock) * 100}%` }"></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">{{ mine.currentStock || 0 }}/{{ mine.maxStock }}</p>
           </div>
         </div>
 
@@ -117,11 +117,12 @@ import { useAuthStore } from '../stores/authStore'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
+import Currency from '../components/Currency.vue'
 import { PlusIcon, MapIcon } from '@heroicons/vue/24/outline'
 
 const store = useMinesStore()
 const authStore = useAuthStore()
-const items = ref([])
+const mines = ref([])
 const loading = ref(true)
 const showWizard = ref(false)
 
@@ -129,7 +130,7 @@ async function load() {
   loading.value = true
   try {
     await store.load()
-    items.value = store.items
+    mines.value = store.items
   } finally {
     loading.value = false
   }

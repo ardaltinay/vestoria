@@ -17,7 +17,7 @@ export const useMinesStore = defineStore('mines', {
       return this.items.find(i => i.id === id)
     },
     async create(payload) {
-      const response = await BuildingService.createBuilding('MINE', payload.tier, payload.subType || 'IRON_MINE')
+      const response = await BuildingService.createBuilding('MINE', payload.tier, payload.subType, payload.name)
       await this.load()
       return response.data
     },

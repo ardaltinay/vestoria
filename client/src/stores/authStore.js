@@ -69,6 +69,26 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async fetchUser() {
+      // Fetch current user data from backend to refresh balance, level, etc.
+      try {
+        const res = await api.get('/users/me')
+        const user = res.data
+        if (user) {
+          this.user = user
+          localStorage.setItem(USER_KEY, JSON.stringify(user))
+        }
+        return user
+      } catch (err) {
+        console.error('Failed to fetch user:', err)
+        // If 401, token expired - logout
+        if (err.response?.status === 401) {
+          this.logout()
+        }
+        throw err
+      }
+    },
+
     setUser(user) {
       this.user = user
       if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))

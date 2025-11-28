@@ -51,7 +51,10 @@
         <div class="grid grid-cols-2 gap-2">
           <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
             <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Nakit</div>
-            <div class="text-sm font-bold text-emerald-600">₺{{ balance }}</div>
+            <div class="text-sm font-bold text-emerald-600 flex items-center gap-1">
+              <CurrencyIcon :size="16" variant="success" />
+              {{ formatCurrency(balance) }}
+            </div>
           </div>
           <div class="bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
             <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prestij</div>
@@ -91,12 +94,40 @@
           </div>
         </div>
 
-        <!-- Market Section -->
+        <!-- Pazar Section -->
         <div>
           <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Pazar</div>
           <div class="space-y-1">
             <RouterLink 
               v-for="item in marketItems" 
+              :key="item.path" 
+              :to="item.path"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
+              :class="[
+                $route.path.startsWith(item.path) 
+                  ? 'bg-primary-50 text-primary-700' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              ]"
+              @click="isSidebarOpen = false"
+            >
+              <component 
+                :is="item.icon" 
+                class="w-5 h-5 transition-colors"
+                :class="[
+                  $route.path.startsWith(item.path) ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'
+                ]"
+              />
+              {{ item.label }}
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Stok Section -->
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Stok</div>
+          <div class="space-y-1">
+            <RouterLink 
+              v-for="item in stockItems" 
               :key="item.path" 
               :to="item.path"
               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group"
@@ -277,9 +308,11 @@ import {
   TruckIcon
 } from '@heroicons/vue/24/outline'
 import Logo from '../components/Logo.vue'
+import CurrencyIcon from '../components/CurrencyIcon.vue'
 import AuthService from '../services/AuthService'
 import { useAuthStore } from '../stores/authStore'
 import { useToast } from '../composables/useToast'
+import { formatCurrency } from '../utils/currency'
 
 const route = useRoute()
 const router = useRouter()
@@ -311,9 +344,7 @@ let pollingInterval = null
 
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
-  if (showNotifications.value) {
-    notificationStore.fetchNotifications()
-  }
+  // Don't fetch here - already fetching in onMounted and polling
 }
 
 const markAllRead = () => {
@@ -339,7 +370,10 @@ const handleClickOutside = (event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch user data to ensure balance and level are up-to-date
+  await authStore.fetchUser()
+  
   notificationStore.fetchNotifications()
   // Poll every 30 seconds for notifications only
   pollingInterval = setInterval(() => {
@@ -371,7 +405,7 @@ const currentRouteName = computed(() => {
     'Factories': 'Fabrikalar',
     'Mines': 'Madenler',
     'Gardens': 'Bahçeler',
-    'Marketplace': 'Pazar Yeri',
+    'Inventory': 'Envanter',
     'Social': 'Sosyal'
   }
   return map[route.name] || route.name
@@ -387,6 +421,10 @@ const businessItems = [
 
 const marketItems = [
   { label: 'Pazar Yeri', path: '/home/market', icon: ShoppingCartIcon },
+]
+
+const stockItems = [
+  { label: 'Envanter', path: '/home/inventory', icon: SparklesIcon },
 ]
 
 const socialItems = [

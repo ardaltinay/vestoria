@@ -1,6 +1,8 @@
 package io.vestoria.service;
 
+import io.vestoria.converter.AuthConverter;
 import io.vestoria.converter.UserConverter;
+import io.vestoria.dto.response.AuthResponseDto;
 import io.vestoria.dto.response.DashboardStatsDto;
 import io.vestoria.entity.UserEntity;
 import java.math.BigDecimal;
@@ -11,6 +13,8 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,7 @@ public class UserService {
   private final TransactionRepository transactionRepository;
   private final BuildingRepository buildingRepository;
   private final UserConverter userConverter;
+  private final AuthConverter authConverter;
 
   @Transactional
   public void addXp(UserEntity user, long amount) {
@@ -68,5 +73,12 @@ public class UserService {
     }
 
     return userConverter.toDashboardStatsDto(dailyEarnings, (int) activeBusinesses, marketShare);
+  }
+
+  public AuthResponseDto getCurrentUser(String username) {
+    UserEntity user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return authConverter.toResponseDto(user);
   }
 }

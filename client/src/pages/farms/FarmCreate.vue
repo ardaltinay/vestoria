@@ -26,13 +26,25 @@
 import { reactive } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useFarmsStore } from '../../stores/farmsStore'
+import { useToast } from '../../composables/useToast'
 
 const router = useRouter()
 const store = useFarmsStore()
+const { addToast } = useToast()
 const form = reactive({ name: '', description: '', level: 1, revenue: 0 })
 
-function submit() {
-  const created = store.create({ ...form })
-  router.push(`/home/farms/${created.id}`)
+async function submit() {
+  if (!form.name || !form.name.trim()) {
+    addToast('Lütfen çiftlik ismini giriniz', 'warning')
+    return
+  }
+
+  try {
+    const created = await store.create({ ...form })
+    router.push(`/home/farms/${created.id}`)
+  } catch (error) {
+    console.error(error)
+    addToast('Çiftlik oluşturulamadı', 'error')
+  }
 }
 </script>

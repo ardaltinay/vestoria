@@ -18,7 +18,6 @@ public class MarketConverter {
         .itemId(entity.getItem().getId())
         .itemName(entity.getItem().getName())
         .itemUnit(entity.getItem().getUnit())
-        .itemCategory(entity.getItem().getCategory())
         .itemTier(entity.getItem().getTier())
         .price(entity.getPrice())
         .quantity(entity.getQuantity())

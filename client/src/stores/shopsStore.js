@@ -20,8 +20,7 @@ export const useShopsStore = defineStore('shops', {
       return this.items.find(i => i.id === id)
     },
     async create(payload) {
-      // payload should contain { type: 'SHOP', subType: '...', tier: '...' }
-      const response = await BuildingService.createBuilding('SHOP', payload.tier, payload.subType || 'MARKET')
+      const response = await BuildingService.createBuilding('SHOP', payload.tier, payload.subType || 'MARKET', payload.name)
       await this.load()
       return response.data
     },

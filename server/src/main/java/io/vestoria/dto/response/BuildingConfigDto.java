@@ -21,6 +21,8 @@ public class BuildingConfigDto implements Serializable {
   private BuildingTier tier;
   private BigDecimal cost;
   private BigDecimal productionRate;
+  private float productionDuration;
+  private float salesDuration;
   private Integer maxStock;
   private Integer maxSlots;
 }

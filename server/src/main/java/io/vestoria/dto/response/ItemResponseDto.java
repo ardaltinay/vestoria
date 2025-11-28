@@ -1,6 +1,5 @@
 package io.vestoria.dto.response;
 
-import io.vestoria.enums.ItemCategory;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
 import lombok.Builder;
@@ -20,5 +19,4 @@ public class ItemResponseDto implements Serializable {
   private Integer quantity;
   private BigDecimal qualityScore;
   private ItemTier tier;
-  private ItemCategory category;
 }

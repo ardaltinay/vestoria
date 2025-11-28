@@ -47,9 +47,10 @@
                 <BuildingStorefrontIcon class="w-6 h-6 text-amber-600" />
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="font-bold text-gray-900 group-hover:text-amber-600 transition-colors text-sm sm:text-base truncate">{{ shop.subType }}</h3>
+                <h3 class="font-bold text-gray-900 group-hover:text-amber-600 transition-colors text-sm sm:text-base truncate">{{ shop.name }}</h3>
+                <p class="text-xs text-gray-500 truncate">{{ convertSubTypeToTr(shop.subType) }}</p>
                 <span class="inline-block mt-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                  Seviye {{ shop.level }}
+                  Seviye {{ convertTierToTr(shop.tier) }}
                 </span>
               </div>
             </div>
@@ -65,7 +66,9 @@
           <div class="grid grid-cols-2 gap-2 sm:gap-3">
             <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
               <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Gelir /dak</div>
-              <div class="text-base sm:text-lg font-bold text-gray-900">₺{{ shop.productionRate || 0 }}</div>
+              <div class="text-base sm:text-lg font-bold text-gray-900">
+                <Currency :amount="shop.productionRate || 0" :icon-size="16" />
+              </div>
             </div>
             <div class="bg-gray-50 rounded-lg p-2.5 sm:p-3 border border-gray-200">
               <div class="text-xs font-medium text-gray-500 mb-0.5 sm:mb-1">Stok</div>
@@ -100,16 +103,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useShopsStore } from '../stores/shopsStore'
 import { useAuthStore } from '../stores/authStore'
+import { useRouter } from 'vue-router'
 import PageHeader from '../components/PageHeader.vue'
 import AppButton from '../components/AppButton.vue'
 import CreateBuildingWizard from '../components/CreateBuildingWizard.vue'
+import Currency from '../components/Currency.vue'
 import { PlusIcon, BuildingStorefrontIcon } from '@heroicons/vue/24/outline'
 
 const store = useShopsStore()
 const authStore = useAuthStore()
+const router = useRouter() // Added useRouter
 const shops = ref([])
 const loading = ref(true)
 const showWizard = ref(false)
@@ -133,6 +139,32 @@ async function handleCreate(payload) {
     await authStore.fetchUser()
   } catch (error) {
     console.error('Failed to create shop:', error)
+  }
+}
+
+const convertTierToTr = (tier) => {
+  switch (tier) {
+    case 'SMALL':
+      return 'KÜÇÜK'
+    case 'MEDIUM':
+      return 'ORTA'
+    case 'LARGE':
+      return 'BÜYÜK'
+    default:
+      return 'Bilinmeyen'
+  }
+}
+
+const convertSubTypeToTr = (subType) => {
+  switch (subType) {
+    case 'GREENGROCER':
+      return 'MANAV'
+    case 'CLOTHING':
+      return 'GİYİM'
+    case 'JEWELER':
+      return 'KUYUMCU'
+    default:
+      return 'MARKET'
   }
 }
 

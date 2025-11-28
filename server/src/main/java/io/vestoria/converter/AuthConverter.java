@@ -18,4 +18,8 @@ public class AuthConverter {
                 .isAdmin(entity.getIsAdmin())
                 .build();
     }
+
+    public AuthResponseDto toResponseDto(UserEntity entity) {
+        return toAuthDto(entity);
+    }
 }

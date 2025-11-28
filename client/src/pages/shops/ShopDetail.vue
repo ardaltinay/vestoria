@@ -2,7 +2,7 @@
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold">{{ shop?.subType || 'Dükkan bulunamadı' }}</h1>
+        <h1 class="text-2xl font-bold">{{ shop?.name || 'Dükkan bulunamadı' }}</h1>
         <p v-if="shop" class="text-sm text-gray-500">Dükkan ayrıntıları</p>
       </div>
       <div>
@@ -19,7 +19,7 @@
           <div class="flex items-center justify-between">
             <div class="flex-1">
               <div class="text-xs sm:text-sm font-medium text-gray-500 mb-1">Seviye</div>
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900">{{ shop.level }}</div>
+              <div class="text-md sm:text-lg font-bold text-gray-900">{{ convertTierToTr(shop.tier) }}</div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,21 +29,7 @@
           </div>
         </div>
 
-        <div class="bg-white rounded-lg p-4 sm:p-5 border-l-4 border-green-500 shadow-sm hover:shadow-md transition-shadow">
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <div class="text-xs sm:text-sm font-medium text-gray-500 mb-1">Son Satış Geliri</div>
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900">₺{{ shop.lastRevenue || 0 }}</div>
-            </div>
-            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg p-4 sm:p-5 border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+        <div class="bg-white rounded-lg p-4 sm:p-5 border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-shadow">
           <div class="flex items-center justify-between">
             <div class="flex-1">
               <div class="text-xs sm:text-sm font-medium text-gray-500 mb-1">Stok Durumu</div>
@@ -54,6 +40,22 @@
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg class="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg p-4 sm:p-5 border-l-4 border-green-500 shadow-sm hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <div class="text-xs sm:text-sm font-medium text-gray-500 mb-1">Son Satış Geliri</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900">
+                <Currency :amount="shop.lastRevenue || 0" :icon-size="24" />
+              </div>
+            </div>
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
           </div>
@@ -91,14 +93,19 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white">
                   <tr v-for="item in shop.items" :key="item.id" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">{{ item.name }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">
+                      <div class="flex items-center gap-2">
+                        <ProductIcon :name="item.name" size="sm" />
+                        {{ item.name }}
+                      </div>
+                    </td>
                     <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">{{ item.quantity }}</td>
                     <td class="px-3 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        ★ {{ item.qualityScore }}
-                      </span>
+                      <StarRating :score="item.qualityScore" size="xs" />
                     </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm hidden md:table-cell">₺{{ item.price }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm hidden md:table-cell">
+                      <Currency :amount="item.cost || 0" :icon-size="14" />
+                    </td>
                     <td class="px-3 sm:px-4 py-2 sm:py-3">
                       <div v-if="editingItem === item.id" class="flex items-center gap-2">
                         <input 
@@ -113,7 +120,9 @@
                         <button @click="cancelEditPrice" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-xs font-medium">İptal</button>
                       </div>
                       <div v-else class="flex items-center gap-2">
-                        <span class="font-medium text-gray-900 text-xs sm:text-sm">₺{{ item.price }}</span>
+                        <span class="font-medium text-gray-900 text-xs sm:text-sm">
+                          <Currency :amount="item.price" :icon-size="14" />
+                        </span>
                         <button 
                           @click="startEditPrice(item)" 
                           class="p-1 sm:p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -158,7 +167,7 @@
               @click="handleUpgrade"
               :disabled="shop.level >= 3"
               class="px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              :title="shop.level >= 3 ? 'Maksimum seviyedesiniz' : 'Yükselt (15,000₺)'"
+              :title="shop.level >= 3 ? 'Maksimum seviyedesiniz' : 'Yükselt (15,000 VP)'"
             >
               <span class="flex items-center justify-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +221,7 @@
           
           <div class="p-6 space-y-4">
             <p class="text-slate-600 text-sm">
-              Dükkanınızdaki ürünleri satışa çıkarmak üzeresiniz. Satış 10 dakika sürecektir.
+              Dükkanınızdaki ürünleri satışa çıkarmak üzeresiniz. Satış {{ buildingConfig?.salesDuration || '-' }} dakika sürecektir.
             </p>
 
             <div class="flex gap-3 pt-4">
@@ -260,7 +269,7 @@
               <ul class="text-sm text-blue-800 space-y-1 ml-8">
                 <li>• Mevcut Seviye: <strong>{{ shop.level }}</strong></li>
                 <li>• Yeni Seviye: <strong>{{ shop.level + 1 }}</strong></li>
-                <li>• Maliyet: <strong>15,000₺</strong></li>
+                <li>• Maliyet: <strong><Currency :amount="15000" :icon-size="14" class-name="inline-flex" /></strong></li>
               </ul>
             </div>
 
@@ -317,7 +326,7 @@
 
             <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
               <div class="text-sm text-emerald-800">
-                <strong>İade Edilecek Tutar:</strong> {{ (shop.cost - 10000).toLocaleString() }}₺
+                <strong>İade Edilecek Tutar:</strong> <Currency :amount="shop.cost - 10000" :icon-size="16" />
               </div>
             </div>
 
@@ -351,17 +360,23 @@ import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useShopsStore } from '../../stores/shopsStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useBuildingConfigStore } from '../../stores/buildingConfigStore'
 import BuildingService from '../../services/BuildingService'
-import InventoryService from '../../services/InventoryService' // We might need this to update item price
+import InventoryService from '../../services/InventoryService'
 import { useToast } from '../../composables/useToast'
 import { XMarkIcon, PencilSquareIcon } from '@heroicons/vue/24/outline'
+import Currency from '../../components/Currency.vue'
+import StarRating from '../../components/StarRating.vue'
+import ProductIcon from '../../components/ProductIcon.vue'
 
 const route = useRoute()
 const shopsStore = useShopsStore()
 const authStore = useAuthStore()
+const configStore = useBuildingConfigStore()
 const { addToast } = useToast()
 
 const shop = computed(() => shopsStore.items.find(s => s.id === route.params.id))
+const buildingConfig = computed(() => shop.value ? configStore.getConfig('SHOP', shop.value.tier) : null)
 const timeLeft = ref('')
 let timerInterval = null
 
@@ -373,7 +388,7 @@ const showCloseModal = ref(false)
 const editingItem = ref(null)
 const newPrice = ref(0)
 
-const updateTimer = () => {
+const updateTimer = async () => {
   if (!shop.value?.salesEndsAt) {
     timeLeft.value = ''
     return
@@ -390,11 +405,25 @@ const updateTimer = () => {
       timerInterval = null
     }
     
-    const pollInterval = setInterval(async () => {
-      await shopsStore.load()
-      if (!shop.value?.isSelling) {
-        clearInterval(pollInterval)
+    // Wait 2 seconds to ensure backend clock is synced/ahead
+    setTimeout(async () => {
+      try {
+        console.log('Triggering auto-complete sale...')
+        await BuildingService.completeSale(shop.value.id)
+        addToast('Satış tamamlandı!', 'success')
         await shopsStore.load()
+        await authStore.fetchUser()
+      } catch (error) {
+        console.error('Auto-complete failed:', error)
+        // Fallback to polling if manual trigger fails
+        const pollInterval = setInterval(async () => {
+          await shopsStore.load()
+          if (!shop.value?.isSelling) {
+            clearInterval(pollInterval)
+            await shopsStore.load()
+            await authStore.fetchUser()
+          }
+        }, 2000)
       }
     }, 2000)
     
@@ -419,7 +448,17 @@ const confirmStartSales = async () => {
     const response = await BuildingService.startSales(shop.value.id)
     addToast('Satış başlatıldı! Müşteriler bekleniyor...', 'success')
     showSellModal.value = false
-    await shopsStore.load()
+
+    //await shopsStore.load()
+    
+    // Manually set 1 minute timer for testing as requested
+    const oneMinuteLater = new Date(new Date().getTime() + 60000).toISOString()
+    
+    // Update local shop state immediately
+    if (shop.value) {
+      shop.value.isSelling = true
+      shop.value.salesEndsAt = oneMinuteLater
+    }
     
     // Update user balance from response
     if (response.data) {
@@ -439,6 +478,19 @@ const confirmStartSales = async () => {
 const startEditPrice = (item) => {
   editingItem.value = item.id
   newPrice.value = item.price
+}
+
+const convertTierToTr = (tier) => {
+  switch (tier) {
+    case 'SMALL':
+      return 'KÜÇÜK'
+    case 'MEDIUM':
+      return 'ORTA'
+    case 'LARGE':
+      return 'BÜYÜK'
+    default:
+      return 'Bilinmeyen'
+  }
 }
 
 const savePrice = async (item) => {
@@ -510,7 +562,7 @@ const confirmClose = async () => {
     
     // Update user balance from response
     if (response.data) {
-      authStore.updateUser(response.data)
+      authStore.fetchUser()
     }
     
     // Redirect to shops list
@@ -524,6 +576,9 @@ const confirmClose = async () => {
 }
 
 onMounted(async () => {
+  // Fetch building configs (will use cache if already loaded)
+  await configStore.fetchConfigs()
+  
   if (!shopsStore.items.length) {
     await shopsStore.load()
   }

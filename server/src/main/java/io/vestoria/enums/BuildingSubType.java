@@ -1,45 +1,44 @@
 package io.vestoria.enums;
 
+import io.vestoria.constant.Constants;
 import lombok.Getter;
+
+import java.util.List;
 
 @Getter
 public enum BuildingSubType {
-  // Shops
-  MARKET(BuildingType.SHOP, null, "Market", "Temel gıda ve ihtiyaç malzemeleri."),
-  CLOTHING(BuildingType.SHOP, null, "Giyim Mağazası", "Moda ve tekstil ürünleri."),
-  GREENGROCER(BuildingType.SHOP, null, "Manav", "Taze meyve ve sebze."),
-  JEWELER(BuildingType.SHOP, null, "Kuyumcu", "Değerli takı ve aksesuarlar."),
+  // Shops (they sell, not produce)
+  MARKET(BuildingType.SHOP, null, Constants.MARKET_ITEMS, "Market", "Temel gıda ve ihtiyaç malzemeleri."),
+  CLOTHING(BuildingType.SHOP, null, Constants.CLOTHING_ITEMS, "Giyim Mağazası", "Moda ve tekstil ürünleri."),
+  GREENGROCER(BuildingType.SHOP, null, Constants.GREENGROCER_ITEMS, "Manav", "Taze meyve ve sebze."),
+  JEWELER(BuildingType.SHOP, null, Constants.JEWELER_ITEMS, "Kuyumcu", "Değerli takı ve aksesuarlar."),
 
   // Gardens
-  VEGETABLE_GARDEN(BuildingType.GARDEN, "Domates", "Sebze Bahçesi", "Mevsimlik sebze yetiştiriciliği."),
-  FRUIT_ORCHARD(BuildingType.GARDEN, "Elma", "Meyve Bahçesi", "Ağaç meyveleri üretimi."),
+  GARDEN(BuildingType.GARDEN, Constants.GARDEN_ITEMS, null, "Bahçe", "Meyve ve Sebze Bahçeleri"),
 
   // Farms
-  LIVESTOCK(BuildingType.FARM, "Süt", "Hayvancılık", "Et ve süt ürünleri üretimi."),
-  WHEAT_FIELD(BuildingType.FARM, "Buğday", "Buğday Tarlası", "Temel tahıl üretimi."),
+  FARM(BuildingType.FARM, Constants.FARM_ITEMS, null, "Çiftlik", "Tarım ve Hayvan Çiftlikleri"),
 
   // Factories
-  TEXTILE(BuildingType.FACTORY, "Ceket", "Tekstil Fabrikası", "Kumaş ve giyim üretimi."),
-  STEEL_FACTORY(BuildingType.FACTORY, "Çelik", "Çelik Fabrikası", "Metal işleme ve üretim."),
+  FACTORY(BuildingType.FACTORY, Constants.FACTORY_MAP.keySet().stream().toList(), null, "Fabrika", "Fabrikalar"),
 
   // Mines
-  IRON_MINE(BuildingType.MINE, "Demir", "Demir Madeni", "Demir cevheri çıkarımı."),
-  COAL_MINE(BuildingType.MINE, "Kömür", "Kömür Madeni", "Enerji için kömür çıkarımı."),
-  GOLD_MINE(BuildingType.MINE, "Altın", "Altın Madeni", "Değerli metal madenciliği."),
-  COPPER_MINE(BuildingType.MINE, "Bakır", "Bakır Madeni", "Endüstriyel metal madenciliği."),
-  OIL_WELL(BuildingType.MINE, "Petrol", "Petrol Kuyusu", "Enerji üretimi."),
+  MINE(BuildingType.MINE, Constants.MINE_ITEMS, null, "Maden", "Madenler"),
 
   // Generic/Fallback
-  GENERIC(null, null, "Standart", "Standart üretim tesisi.");
+  GENERIC(null, null, null, "Standart", "Standart üretim tesisi.");
 
   private final BuildingType parentType;
-  private final String producedItemName;
+  private final List<String> producedItemName;
+  private final List<String> marketableProducts;
   private final String label;
   private final String description;
 
-  BuildingSubType(BuildingType parentType, String producedItemName, String label, String description) {
+  BuildingSubType(BuildingType parentType, List<String> producedItemName, List<String> marketableProducts, String label,
+      String description) {
     this.parentType = parentType;
     this.producedItemName = producedItemName;
+    this.marketableProducts = marketableProducts;
     this.label = label;
     this.description = description;
   }

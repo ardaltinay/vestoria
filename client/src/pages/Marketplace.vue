@@ -41,45 +41,65 @@
       </button>
     </div>
 
-    <!-- Listings Table -->
-    <div v-else class="bg-white rounded-lg sm:rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto -mx-4 sm:mx-0">
-        <div class="inline-block min-w-full align-middle px-4 sm:px-0">
-          <table class="min-w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-              <tr>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Ürün</th>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden md:table-cell">Satıcı</th>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Miktar</th>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">Kalite</th>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">Fiyat</th>
-                <th class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-right">İşlem</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="listing in listings" :key="listing.id" class="hover:bg-slate-50 transition-colors">
-                <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-slate-900 text-xs sm:text-sm">{{ listing.itemName }}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm hidden md:table-cell">{{ listing.sellerUsername }}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm">{{ listing.quantity }}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
-                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700">
-                    ★ {{ listing.qualityScore }}
-                  </span>
-                </td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-emerald-600 text-xs sm:text-sm">₺{{ listing.price }}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
-                  <button 
-                    @click="openBuyModal(listing)"
-                    class="bg-slate-900 text-white px-2.5 sm:px-4 py-1.5 rounded-md sm:rounded-lg hover:bg-slate-800 transition-colors text-xs font-medium"
-                  >
-                    <span class="hidden sm:inline">Satın Al</span>
-                    <span class="sm:hidden">Al</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <!-- Content -->
+    <div v-else class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+              <th class="px-3 sm:px-6 py-3 sm:py-4">Ürün</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4">Satıcı</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4">Miktar</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4">Kalite</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4">Fiyat</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-right">İşlem</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr 
+              v-for="listing in listings" 
+              :key="listing.id"
+              class="hover:bg-slate-50 transition-colors group"
+            >
+              <td class="px-3 sm:px-6 py-3 sm:py-4">
+                <div class="flex items-center gap-3">
+                  <ProductIcon :name="listing.itemName.trim()" size="md" class="group-hover:scale-110 transition-transform" />
+                  <div>
+                    <div class="font-medium text-slate-900 text-sm sm:text-base">{{ listing.itemName }}</div>
+                    <div class="text-xs text-slate-500 hidden sm:block">Tier {{ listing.tier }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm">{{ listing.sellerUsername }}</td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                  {{ listing.sellerUsername.toLowerCase() === 'vestoria' ? '∞' : listing.quantity }}
+                </span>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4">
+                <StarRating :score="listing.qualityScore" size="xs" />
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-emerald-600 text-xs sm:text-sm">
+                <div class="flex items-center gap-1">
+                  <CurrencyIcon class="w-3 h-3 sm:w-4 sm:h-4" />
+                  {{ formatCurrency(listing.price) }}
+                </div>
+              </td>
+              <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                <button 
+                  @click="openBuyModal(listing)"
+                  :disabled="listing.sellerUsername === currentUser?.username"
+                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md active:scale-95"
+                  :title="listing.sellerUsername === currentUser?.username ? 'Kendi ürününüzü satın alamazsınız' : 'Satın Al'"
+                >
+                  <ShoppingCartIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                  <span class="hidden sm:inline">Satın Al</span>
+                  <span class="sm:hidden">Al</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -127,7 +147,10 @@
                 <div class="text-sm text-slate-500">Satıcı: {{ selectedListing.sellerUsername }}</div>
               </div>
               <div class="text-right">
-                <div class="font-bold text-emerald-600">₺{{ selectedListing.price }}</div>
+                <div class="font-bold text-emerald-600 flex items-center justify-end gap-1">
+                  <CurrencyIcon :size="18" variant="success" />
+                  {{ formatCurrency(selectedListing.price) }}
+                </div>
                 <div class="text-xs text-slate-400">/ birim</div>
               </div>
             </div>
@@ -152,8 +175,9 @@
             <!-- Total Cost -->
             <div class="flex justify-between items-center py-4 border-t border-slate-100">
               <span class="text-slate-600 font-medium">Toplam Tutar</span>
-              <span class="text-2xl font-bold text-emerald-600">
-                ₺{{ (selectedListing.price * buyQuantity).toFixed(2) }}
+              <span class="text-2xl font-bold text-emerald-600 flex items-center gap-2">
+                <CurrencyIcon :size="24" variant="success" />
+                {{ formatCurrency((selectedListing.price * buyQuantity).toFixed(2)) }}
               </span>
             </div>
 
@@ -243,7 +267,7 @@
                 
                 <!-- Price -->
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Birim Fiyat (₺)</label>
+                  <label class="block text-sm font-medium text-slate-700 mb-1">Birim Fiyat (VP)</label>
                   <input 
                     v-model.number="listingForm.price"
                     type="number" 
@@ -257,7 +281,10 @@
               <!-- Summary -->
               <div v-if="selectedItem && listingForm.price && listingForm.quantity" class="bg-slate-50 p-3 rounded-lg text-sm flex justify-between items-center">
                 <span class="text-slate-600">Toplam Kazanç:</span>
-                <span class="font-bold text-emerald-600">₺{{ (listingForm.price * listingForm.quantity).toFixed(2) }}</span>
+                <span class="font-bold text-emerald-600 flex items-center gap-1">
+                  <CurrencyIcon :size="16" variant="success" />
+                  {{ formatCurrency((listingForm.price * listingForm.quantity).toFixed(2)) }}
+                </span>
               </div>
 
               <div class="pt-2 flex gap-3">
@@ -289,8 +316,13 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import MarketService from '../services/MarketService'
 import InventoryService from '../services/InventoryService'
+import { useAuthStore } from '../stores/authStore'
 import { useToast } from '../composables/useToast'
 import { XMarkIcon, ArchiveBoxIcon, ShoppingCartIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import CurrencyIcon from '../components/CurrencyIcon.vue'
+import StarRating from '../components/StarRating.vue'
+import ProductIcon from '../components/ProductIcon.vue'
+import { formatCurrency } from '../utils/currency'
 
 const listings = ref([])
 const inventory = ref([])
@@ -334,6 +366,21 @@ const getQualityColor = (score) => {
   if (score >= 8) return 'bg-emerald-500'
   if (score >= 5) return 'bg-amber-500'
   return 'bg-slate-300'
+}
+
+const itemUnitToTr = (unit) => {
+  switch (unit) {
+    case 'PIECE':
+      return 'Adet'
+    case 'KG':
+      return 'Kg'
+    case 'LITER':
+      return 'Litre'
+    case 'METER':
+      return 'Metre'
+    default:
+      return ''
+  }
 }
 
 const fetchListings = async () => {
@@ -407,7 +454,7 @@ const handleCreateListing = async () => {
     selectedItem.value = null
     listingForm.value = { quantity: 1, price: 10 }
   } catch (error) {
-    console.error('Listing creation failed:', error)
+    // Error handled globally
   } finally {
     isListing.value = false
   }
@@ -425,18 +472,23 @@ const closeBuyModal = () => {
   buyQuantity.value = 1
 }
 
+const authStore = useAuthStore()
+
 const confirmBuy = async () => {
   if (!selectedListing.value || isBuying.value) return
   
   try {
     isBuying.value = true
     await MarketService.buyItem(selectedListing.value.id, { quantity: buyQuantity.value })
-    addToast('Satın alma başarılı!', 'success')
+    
+    // Update user balance
+    await authStore.fetchUser()
+    
+    addToast('Ürün başarıyla satın alındı ve envantere eklendi.', 'success')
     fetchListings()
     closeBuyModal()
   } catch (error) {
-    console.error('Buy failed:', error)
-    // Error handled globally by interceptor
+    // Error handled globally
   } finally {
     isBuying.value = false
   }

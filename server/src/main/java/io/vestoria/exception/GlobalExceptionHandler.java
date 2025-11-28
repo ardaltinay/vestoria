@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
     ErrorResponse error = new ErrorResponse(
         HttpStatus.INTERNAL_SERVER_ERROR.value(),
-        "An unexpected error occurred: " + ex.getMessage(),
+        "Beklenmeyen bir hata oluştu: " + ex.getMessage(),
         LocalDateTime.now());
     return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
   }

@@ -2,7 +2,7 @@
   <div class="p-6">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold">{{ item?.subType || 'Bahçe bulunamadı' }}</h1>
+        <h1 class="text-2xl font-bold">{{ item?.name || 'Bahçe bulunamadı' }}</h1>
         <p v-if="item" class="text-sm text-gray-500">Bahçe ayrıntıları</p>
       </div>
       <div>
@@ -13,25 +13,6 @@
     <div v-if="!item" class="text-gray-500">Bahçe bulunamadı veya silinmiş.</div>
 
     <div v-else class="space-y-6">
-      <!-- Production Selection (If SubType is null) -->
-      <div v-if="!item.subType" class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 shadow-lg text-white">
-        <h2 class="text-xl font-bold mb-2">Üretime Başla</h2>
-        <p class="text-indigo-100 mb-4">Bu bahçe henüz üretim yapmıyor. Üretime başlamak için bir tür seçin:</p>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div v-for="option in productionOptions" :key="option.value" 
-               @click="selectProduction(option.value)"
-               class="cursor-pointer rounded-lg border-2 border-white/30 bg-white/10 backdrop-blur-sm p-4 hover:border-white hover:bg-white/20 transition-all group">
-            <div class="flex items-center justify-between mb-2">
-              <span class="font-bold text-white">{{ option.label }}</span>
-              <span class="text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                Seç →
-              </span>
-            </div>
-            <p class="text-sm text-indigo-100">{{ option.description }}</p>
-          </div>
-        </div>
-      </div>
 
       <!-- Stats Grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -39,7 +20,7 @@
           <div class="flex items-center justify-between">
             <div>
               <div class="text-xs sm:text-sm font-medium text-green-600 mb-1">Seviye</div>
-              <div class="text-2xl sm:text-3xl font-bold text-green-900">{{ item.level }}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-green-900">{{ convertTierToTr(item.tier) }}</div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-200 rounded-full flex items-center justify-center">
               <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,8 +33,10 @@
         <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 sm:p-5 border border-amber-200">
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-xs sm:text-sm font-medium text-amber-600 mb-1">Tür</div>
-              <div class="text-2xl sm:text-3xl font-bold text-amber-900">{{ item.subType || 'Seçilmedi' }}</div>
+              <div class="text-xs sm:text-sm font-medium text-amber-600 mb-1">Stok Durumu</div>
+              <div class="text-2xl sm:text-3xl font-bold" :class="{'text-red-600': !currentStock, 'text-amber-900': currentStock > 0}">
+                {{ currentStock }}<span class="text-base sm:text-lg text-amber-700 font-normal">/{{ item.maxStock }}</span>
+              </div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-200 rounded-full flex items-center justify-center">
               <svg class="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +50,9 @@
           <div class="flex items-center justify-between">
             <div>
               <div class="text-xs sm:text-sm font-medium text-blue-600 mb-1">Gelir /dak</div>
-              <div class="text-2xl sm:text-3xl font-bold text-blue-900">₺{{ item.revenue }}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-blue-900">
+                <Currency :amount="item.revenue" :icon-size="24" />
+              </div>
             </div>
             <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-200 rounded-full flex items-center justify-center">
               <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,14 +93,14 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                   <tr v-for="prodItem in item.items" :key="prodItem.id" class="hover:bg-gray-50 transition-colors">
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">{{ prodItem.name }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">{{ prodItem.subType ? gameDataStore.getItem(prodItem.subType)?.name : prodItem.name }}</td>
                     <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">{{ prodItem.quantity }}</td>
                     <td class="px-3 sm:px-4 py-2 sm:py-3">
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        ★ {{ prodItem.qualityScore }}
-                      </span>
+                      <StarRating :score="prodItem.qualityScore" size="xs" />
                     </td>
-                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">₺{{ prodItem.price }}</td>
+                    <td class="px-3 sm:px-4 py-2 sm:py-3 text-gray-600 text-xs sm:text-sm">
+                      <Currency :amount="prodItem.price" :icon-size="14" />
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -128,7 +113,7 @@
           <div class="flex flex-col sm:flex-row gap-2">
             <button 
                 v-if="!isProducing"
-                @click="startProduction" 
+                @click="showProductionModal = true" 
                 class="flex-1 px-3 sm:px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg font-semibold hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg shadow-primary-500/30 text-sm"
             >
                 <span class="flex items-center justify-center gap-1.5">
@@ -163,7 +148,7 @@
               @click="handleUpgrade"
               :disabled="item.level >= 3"
               class="px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              :title="item.level >= 3 ? 'Maksimum seviyedesiniz' : 'Yükselt (15,000₺)'"
+              :title="item.level >= 3 ? 'Maksimum seviyedesiniz' : 'Yükselt (15,000 VP)'"
             >
               <span class="flex items-center justify-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,6 +172,55 @@
               </span>
             </button>
           </div>
+
+    <!-- Production Start Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showProductionModal" 
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        @click.self="showProductionModal = false"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+          <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-slate-900">Üretimi Başlat</h2>
+            <button @click="showProductionModal = false" class="text-slate-400 hover:text-slate-600">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <SelectBox
+              v-model="selectedProduct"
+              :options="productionOptions"
+              label="Üretilecek Ürün"
+              placeholder="Bir ürün seçin..."
+              value-key="id"
+              label-key="name"
+            />
+            
+            <p class="text-slate-600 text-sm">
+              Bahçenizde üretim başlatmak üzeresiniz. Üretim {{ buildingConfig?.productionDuration || '-' }} dakika sürecektir.
+            </p>
+
+            <div class="flex gap-3 pt-4">
+              <button 
+                @click="showProductionModal = false" 
+                class="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                İptal
+              </button>
+              <button 
+                @click="confirmStartProduction"
+                :disabled="!selectedProduct"
+                class="flex-1 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Başlat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
         </div>
       </div>
     </div>
@@ -217,7 +251,7 @@
               <ul class="text-sm text-blue-800 space-y-1 ml-8">
                 <li>• Mevcut Seviye: <strong>{{ item.level }}</strong></li>
                 <li>• Yeni Seviye: <strong>{{ item.level + 1 }}</strong></li>
-                <li>• Maliyet: <strong>15,000₺</strong></li>
+                <li>• Maliyet: <strong><Currency :amount="15000" :icon-size="14" class-name="inline-flex" /></strong></li>
               </ul>
             </div>
 
@@ -274,7 +308,7 @@
 
             <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
               <div class="text-sm text-emerald-800">
-                <strong>İade Edilecek Tutar:</strong> {{ (item.cost - 10000).toLocaleString() }}₺
+                <strong>İade Edilecek Tutar:</strong> <Currency :amount="item.cost - 10000" :icon-size="16" />
               </div>
             </div>
 
@@ -304,24 +338,34 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useGardensStore } from '../../stores/gardensStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useGameDataStore } from '../../stores/gameDataStore'
+import { useBuildingConfigStore } from '../../stores/buildingConfigStore'
 import BuildingService from '../../services/BuildingService'
 import { useToast } from '../../composables/useToast'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
+import Currency from "../../components/Currency.vue"
+import SelectBox from "../../components/SelectBox.vue"
+import StarRating from "../../components/StarRating.vue"
 
 const route = useRoute()
 const { addToast } = useToast()
 const store = useGardensStore()
 const authStore = useAuthStore()
+const gameDataStore = useGameDataStore()
+const configStore = useBuildingConfigStore()
 const item = computed(() => store.items.find(i => i.id === route.params.id))
+const buildingConfig = computed(() => item.value ? configStore.getConfig('GARDEN', item.value.tier) : null)
 
 const productionOptions = ref([])
+const selectedProduct = ref(null)
 const timeLeft = ref('')
 const showUpgradeModal = ref(false)
 const showCloseModal = ref(false)
+const showProductionModal = ref(false)
 let timerInterval = null
 
 const isProducing = computed(() => item.value?.isProducing)
@@ -330,7 +374,12 @@ const canCollect = computed(() => {
     return new Date(item.value.productionEndsAt).getTime() <= new Date().getTime()
 })
 
-const updateTimer = () => {
+const currentStock = computed(() => {
+  if (!item.value?.items) return 0
+  return item.value.items.reduce((total, i) => total + i.quantity, 0)
+})
+
+const updateTimer = async () => {
   if (!item.value?.productionEndsAt) {
     timeLeft.value = ''
     return
@@ -346,6 +395,15 @@ const updateTimer = () => {
       clearInterval(timerInterval)
       timerInterval = null
     }
+    
+    try {
+      await BuildingService.completeProduction(item.value.id)
+      addToast('Üretim tamamlandı!', 'success')
+      await store.load()
+    } catch (error) {
+      console.error('Auto-complete production failed:', error)
+    }
+    return
   } else {
     const minutes = Math.floor(diff / 60000)
     const seconds = Math.floor((diff % 60000) / 1000)
@@ -353,11 +411,21 @@ const updateTimer = () => {
   }
 }
 
-async function selectProduction(subType) {
+
+async function confirmStartProduction() {
+  if (!selectedProduct.value) {
+    addToast('Lütfen bir ürün seçin', 'error')
+    return
+  }
+  
+  showProductionModal.value = false
   try {
-    console.log('Select production:', subType)
+    await BuildingService.startProduction(item.value.id, selectedProduct.value)
+    addToast('Üretim başladı!', 'success')
+    selectedProduct.value = null
+    await store.load()
   } catch (error) {
-    console.error(error)
+    addToast('Üretim başlatılamadı: ' + (error.response?.data?.message || error.message), 'error')
   }
 }
 
@@ -386,6 +454,19 @@ async function collectProduction() {
   } catch (error) {
     console.error(error)
     addToast('Toplama başarısız', 'error')
+  }
+}
+
+const convertTierToTr = (tier) => {
+  switch (tier) {
+    case 'SMALL':
+      return 'KÜÇÜK'
+    case 'MEDIUM':
+      return 'ORTA'
+    case 'LARGE':
+      return 'BÜYÜK'
+    default:
+      return 'Bilinmeyen'
   }
 }
 
@@ -428,7 +509,7 @@ const confirmClose = async () => {
     const response = await BuildingService.closeBuilding(item.value.id)
     addToast('Bina başarıyla kapatıldı. İade tutarı hesabınıza eklendi.', 'success')
     if (response.data) {
-      authStore.updateUser(response.data)
+      authStore.fetchUser()
     }
     await store.load()
     window.location.href = '/home/gardens'
@@ -440,17 +521,14 @@ const confirmClose = async () => {
 }
 
 onMounted(async () => {
+  await configStore.fetchConfigs()
+  
   if (!store.items.length) {
     await store.load()
   }
   
-  try {
-    const types = await BuildingService.getProductionTypes()
-    productionOptions.value = types.data.filter(t => t.parentType === 'GARDEN')
-  } catch (e) {
-    console.error('Failed to load production types', e)
-  }
   
+  productionOptions.value = gameDataStore.getItemsByType('GARDEN')
   timerInterval = setInterval(updateTimer, 1000)
   updateTimer()
 })

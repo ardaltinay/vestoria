@@ -11,6 +11,9 @@ export const useNotificationStore = defineStore('notifications', {
 
   actions: {
     async fetchNotifications() {
+      // Prevent concurrent fetches
+      if (this.loading) return
+
       this.loading = true
       try {
         const [notifsRes, countRes] = await Promise.all([

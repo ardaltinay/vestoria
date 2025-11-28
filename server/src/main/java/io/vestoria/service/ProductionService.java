@@ -18,8 +18,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import io.vestoria.enums.ItemCategory;
-
 @Service
 @RequiredArgsConstructor
 public class ProductionService {
@@ -29,7 +27,7 @@ public class ProductionService {
 
   private final UserService userService;
 
-  @Scheduled(fixedRate = 60000) // Every minute
+  // @Scheduled(fixedRate = 60000) // Every minute - DISABLED as per user request
   @Transactional
   public void produceItems() {
     List<BuildingEntity> buildings = buildingRepository.findAll();
@@ -64,11 +62,11 @@ public class ProductionService {
             .name(itemName)
             .unit(ItemUnit.PIECE) // Default
             .price(BigDecimal.TEN) // Default base price
+            .cost(BigDecimal.ZERO) // Default cost
             .quantity(building.getProductionRate().intValue())
             .qualityScore(BigDecimal.ONE)
             .tier(ItemTier.LOW)
             .building(building)
-            .category(getCategoryForBuildingType(building.getType()))
             .build();
         @SuppressWarnings({ "null", "unused" })
         ItemEntity saved = itemRepository.save(newItem);
@@ -85,7 +83,12 @@ public class ProductionService {
 
   private String getItemNameForBuilding(BuildingEntity building) {
     if (building.getSubType() != null && building.getSubType().getProducedItemName() != null) {
-      return building.getSubType().getProducedItemName();
+      List<String> items = building.getSubType().getProducedItemName();
+      /*
+       * if (items.length > 0 && items[0] != null && !items[0].isEmpty()) {
+       * return items[0]; // Return first produced item
+       * }
+       */
     }
     return null; // No production if no SubType selected
   }
@@ -127,20 +130,5 @@ public class ProductionService {
     }
 
     return false;
-  }
-
-  private ItemCategory getCategoryForBuildingType(BuildingType type) {
-    switch (type) {
-      case GARDEN:
-        return ItemCategory.FRESH_PRODUCE;
-      case FARM:
-        return ItemCategory.RAW_MATERIAL; // Or FOOD depending on subtype
-      case FACTORY:
-        return ItemCategory.INDUSTRIAL; // Or CLOTHING
-      case MINE:
-        return ItemCategory.RAW_MATERIAL;
-      default:
-        return null;
-    }
   }
 }

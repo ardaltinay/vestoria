@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -25,8 +26,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "buildings", indexes = {
-        @jakarta.persistence.Index(name = "idx_buildings_type", columnList = "type"),
-        @jakarta.persistence.Index(name = "idx_buildings_owner_id", columnList = "owner_id")
+        @Index(name = "idx_buildings_type", columnList = "type"),
+        @Index(name = "idx_buildings_name", columnList = "name"),
+        @Index(name = "idx_buildings_owner_id", columnList = "owner_id")
 })
 @Getter
 @Setter
@@ -34,6 +36,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class BuildingEntity extends BaseEntity {
+
+    private String name;
+
     @Column(name = "type")
     @Enumerated(EnumType.STRING)
     private BuildingType type;
@@ -44,8 +49,7 @@ public class BuildingEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private BuildingSubType subType;
 
-    private Integer level;
-
+    @Column(precision = 5, scale = 2)
     private BigDecimal productionRate;
 
     private Integer maxSlots;

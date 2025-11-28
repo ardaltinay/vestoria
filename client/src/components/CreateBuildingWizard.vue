@@ -5,7 +5,7 @@
 
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-      <div class="inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full border border-gray-700">
+      <div class="inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full max-w-3xl mx-4 sm:mx-auto border border-gray-700">
         
         <!-- Header -->
         <div class="bg-gray-700 px-4 py-3 sm:px-6 flex justify-between items-center">
@@ -39,13 +39,13 @@
           <div v-if="step === 1">
             <h4 class="text-md font-medium text-gray-300 mb-4">İşletme Türünü Seçin</h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div v-for="option in subTypeOptions" :key="option.value" 
-                   @click="selectSubType(option.value)"
+              <div v-for="option in subTypeOptions" :key="option.id" 
+                   @click="selectSubType(option.id)"
                    class="cursor-pointer rounded-lg border border-gray-600 p-4 hover:border-indigo-500 hover:bg-gray-700 transition-all"
-                   :class="{ 'border-indigo-500 bg-gray-700 ring-2 ring-indigo-500': selectedSubType === option.value }">
+                   :class="{ 'border-indigo-500 bg-gray-700 ring-2 ring-indigo-500': selectedSubType === option.id }">
                 <div class="flex items-center justify-between">
-                  <span class="text-lg font-semibold text-white">{{ option.label }}</span>
-                  <span v-if="selectedSubType === option.value" class="text-indigo-400">
+                  <span class="text-lg font-semibold text-white">{{ option.name }}</span>
+                  <span v-if="selectedSubType === option.id" class="text-indigo-400">
                     <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
                   </span>
                 </div>
@@ -57,7 +57,7 @@
           <!-- Step 2: Select Tier -->
           <div v-if="step === 2">
             <h4 class="text-md font-medium text-gray-300 mb-4">Büyüklük Seçin</h4>
-            <div v-if="loading" class="text-center text-white">Yükleniyor...</div>
+          <div v-if="configStore.loading" class="text-center text-white">Yükleniyor...</div>
             <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <!-- Small -->
               <div @click="selectTier('SMALL')" 
@@ -69,7 +69,9 @@
                   <div class="flex justify-between"><span>Maliyet:</span> <span class="text-green-400 font-mono">{{ formatMoney(getConfig('SMALL').cost) }}</span></div>
                   <div class="flex justify-between"><span>Kapasite:</span> <span class="text-white">{{ getCapacityLabel('SMALL') }}</span></div>
                   <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Stok:</span> <span class="text-white">{{ getStockLabel('SMALL') }}</span></div>
-                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('SMALL') }} /saat</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('SMALL') }} adet</span></div>
+                  <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Satış Süresi:</span> <span class="text-white">{{ getSalesDuration('SMALL') }} dakika</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim Süresi:</span> <span class="text-white">{{ getProductionDuration('SMALL') }} dakika</span></div>
                 </div>
               </div>
 
@@ -83,7 +85,9 @@
                   <div class="flex justify-between"><span>Maliyet:</span> <span class="text-green-400 font-mono">{{ formatMoney(getConfig('MEDIUM').cost) }}</span></div>
                   <div class="flex justify-between"><span>Kapasite:</span> <span class="text-white">{{ getCapacityLabel('MEDIUM') }}</span></div>
                   <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Stok:</span> <span class="text-white">{{ getStockLabel('MEDIUM') }}</span></div>
-                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('MEDIUM') }} /saat</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('MEDIUM') }} adet</span></div>
+                  <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Satış Süresi:</span> <span class="text-white">{{ getSalesDuration('MEDIUM') }} dakika</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim Süresi:</span> <span class="text-white">{{ getProductionDuration('MEDIUM') }} dakika</span></div>
                 </div>
               </div>
 
@@ -97,7 +101,9 @@
                   <div class="flex justify-between"><span>Maliyet:</span> <span class="text-green-400 font-mono">{{ formatMoney(getConfig('LARGE').cost) }}</span></div>
                   <div class="flex justify-between"><span>Kapasite:</span> <span class="text-white">{{ getCapacityLabel('LARGE') }}</span></div>
                   <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Stok:</span> <span class="text-white">{{ getStockLabel('LARGE') }}</span></div>
-                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('LARGE') }} /saat</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim:</span> <span class="text-white">{{ getProductionLabel('LARGE') }} adet</span></div>
+                  <div v-if="buildingType === 'SHOP'" class="flex justify-between"><span>Satış Süresi:</span> <span class="text-white">{{ getSalesDuration('LARGE') }} dakika</span></div>
+                  <div v-else class="flex justify-between"><span>Üretim Süresi:</span> <span class="text-white">{{ getProductionDuration('LARGE') }} dakika</span></div>
                 </div>
               </div>
             </div>
@@ -122,8 +128,24 @@
 
                 <div class="text-gray-400">{{ buildingType === 'SHOP' ? 'Stok:' : 'Üretim:' }}</div>
                 <div class="text-white">
-                  {{ buildingType === 'SHOP' ? getStockLabel(selectedTier) : getProductionLabel(selectedTier) + ' /saat' }}
+                  {{ buildingType === 'SHOP' ? getStockLabel(selectedTier) : getProductionLabel(selectedTier) + ' adet' }}
                 </div>
+              </div>
+
+              <!-- Building Name Input -->
+              <div class="mt-6">
+                <label for="buildingName" class="block text-sm font-medium text-gray-300 mb-2">
+                  İşletme Adı (Opsiyonel)
+                </label>
+                <input 
+                  id="buildingName"
+                  v-model="buildingName"
+                  type="text"
+                  maxlength="50"
+                  placeholder="Örn: Merkez Dükkanım, Ana Fabrika"
+                  class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p class="mt-1 text-xs text-gray-500">Boş bırakırsanız otomatik isim verilecektir</p>
               </div>
             </div>
             <p class="mt-4 text-sm text-gray-400 text-center">
@@ -162,7 +184,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useGameDataStore } from '../stores/gameDataStore'
+import { useBuildingConfigStore } from '../stores/buildingConfigStore'
 import BuildingService from '../services/BuildingService'
+import { formatCurrency } from '../utils/currency'
+
+const gameDataStore = useGameDataStore()
+const configStore = useBuildingConfigStore()
 
 const props = defineProps({
   buildingType: {
@@ -182,29 +210,16 @@ const isShop = computed(() => props.buildingType === 'SHOP')
 const step = ref(isShop.value ? 1 : 2)
 const selectedSubType = ref(null)
 const selectedTier = ref(null)
-const buildingConfigs = ref([])
-const loading = ref(true)
+const buildingName = ref('')
 const isSubmitting = ref(false)
 
-const productionTypes = ref([])
-
 onMounted(async () => {
-  try {
-    const [configRes, typesRes] = await Promise.all([
-      BuildingService.getBuildingConfigs(),
-      BuildingService.getProductionTypes()
-    ])
-    buildingConfigs.value = configRes.data
-    productionTypes.value = typesRes.data
-  } catch (error) {
-    console.error('Failed to fetch building data:', error)
-  } finally {
-    loading.value = false
-  }
+  // Fetch configs from store (will use cache if already loaded)
+  await configStore.fetchConfigs()
 })
 
 const getConfig = (tier) => {
-  return buildingConfigs.value.find(c => c.type === props.buildingType && c.tier === tier) || {}
+  return configStore.getConfig(props.buildingType, tier) || {}
 }
 
 const buildingTypeName = computed(() => {
@@ -219,7 +234,7 @@ const buildingTypeName = computed(() => {
 })
 
 const subTypeOptions = computed(() => {
-  return productionTypes.value.filter(t => t.parentType === props.buildingType)
+  return gameDataStore.getItemsByType(props.buildingType)
 })
 
 const canProceed = computed(() => {
@@ -250,8 +265,8 @@ const calculateTotalCost = () => {
 }
 
 const getSubTypeLabel = (value) => {
-  const option = subTypeOptions.value.find(o => o.value === value)
-  return option ? option.label : value
+  const item = gameDataStore.getItem(value)
+  return item ? item.name : value
 }
 
 const getTierLabel = (value) => {
@@ -281,8 +296,20 @@ const getProductionLabel = (tier) => {
   return config.productionRate
 }
 
+const getProductionDuration = (tier) => {
+  const config = getConfig(tier)
+  if (!config) return '-'
+  return config.productionDuration
+}
+
+const getSalesDuration = (tier) => {
+  const config = getConfig(tier)
+  if (!config) return '-'
+  return config.salesDuration
+}
+
 const formatMoney = (amount) => {
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount)
+  return formatCurrency(amount)
 }
 
 const confirmCreation = async () => {
@@ -294,7 +321,8 @@ const confirmCreation = async () => {
       type: props.buildingType,
       subType: selectedSubType.value,
       tier: selectedTier.value,
-      cost: calculateTotalCost()
+      cost: calculateTotalCost(),
+      name: buildingName.value.trim() || null // Send null if empty
     })
   } finally {
     // We don't set isSubmitting to false here because the parent component will likely close the modal

@@ -78,7 +78,7 @@ api.interceptors.request.use(async config => {
 api.interceptors.response.use(
   response => response,
   async error => {
-    const message = error.response?.data?.message || 'Bir hata oluştu';
+    const message = error.response?.data?.message || 'Bilinmeyen bir hata oluştu.';
 
     // Handle CSRF Token Mismatch (403)
     if (error.response?.status === 403 && !error.config._retryCsrf) {
@@ -110,13 +110,14 @@ api.interceptors.response.use(
       // Clear user data from local storage
       localStorage.removeItem('current_user');
 
-      // Redirect to login page if not already there
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+      // Redirect to login page if not already on public pages
+      const publicPages = ['/login', '/register', '/'];
+      if (!publicPages.includes(window.location.pathname)) {
         window.location.href = '/login';
       }
 
-      // Optional: Show toast only if it's not a routine check
-      if (!error.config?.suppressToast) {
+      // Optional: Show toast only if it's not a routine check and not on landing page
+      if (!error.config?.suppressToast && window.location.pathname !== '/') {
         addToast('Oturumunuz sona erdi. Lütfen tekrar giriş yapın.', 'warning');
       }
     } else if (!error.config?.suppressToast) {

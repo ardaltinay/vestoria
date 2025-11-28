@@ -28,6 +28,7 @@ const routes = [
     component: Home,
     children: [
       { path: '', name: 'HomeMain', component: () => import('./pages/Dashboard.vue') },
+      { path: 'inventory', name: 'Inventory', component: () => import('./pages/Inventory.vue') },
       { path: 'shops', name: 'Shops', component: Dukkanlarim },
       { path: 'shops/new', name: 'ShopCreate', component: () => import('./pages/shops/ShopCreate.vue') },
       { path: 'shops/:id', name: 'ShopDetail', component: () => import('./pages/shops/ShopDetail.vue') },

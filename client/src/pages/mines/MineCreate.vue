@@ -26,13 +26,25 @@
 import { reactive } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useMinesStore } from '../../stores/minesStore'
+import { useToast } from '../../composables/useToast'
 
 const router = useRouter()
 const store = useMinesStore()
+const { addToast } = useToast()
 const form = reactive({ name: '', description: '', level: 1, revenue: 0 })
 
-function submit() {
-  const created = store.create({ ...form })
-  router.push(`/home/mines/${created.id}`)
+async function submit() {
+  if (!form.name || !form.name.trim()) {
+    addToast('Lütfen maden ismini giriniz', 'warning')
+    return
+  }
+
+  try {
+    const created = await store.create({ ...form })
+    router.push(`/home/mines/${created.id}`)
+  } catch (error) {
+    console.error(error)
+    addToast('Maden oluşturulamadı', 'error')
+  }
 }
 </script>

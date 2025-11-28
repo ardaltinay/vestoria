@@ -21,7 +21,13 @@ public class UserController {
   private final UserService userService;
   private final UserRepository userRepository;
 
-  private final io.vestoria.converter.AuthConverter authConverter;
+  @GetMapping("/me")
+  public ResponseEntity<?> getCurrentUser(Principal principal) {
+    UserEntity user = userRepository.findByUsername(principal.getName())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    return ResponseEntity.ok(userService.getCurrentUser(user.getUsername()));
+  }
 
   @GetMapping("/dashboard-stats")
   public ResponseEntity<DashboardStatsDto> getDashboardStats(Principal principal) {
