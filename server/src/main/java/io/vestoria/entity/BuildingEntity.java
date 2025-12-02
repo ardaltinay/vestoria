@@ -28,7 +28,8 @@ import java.util.List;
 @Table(name = "buildings", indexes = {
         @Index(name = "idx_buildings_type", columnList = "type"),
         @Index(name = "idx_buildings_name", columnList = "name"),
-        @Index(name = "idx_buildings_owner_id", columnList = "owner_id")
+        @Index(name = "idx_buildings_owner_id", columnList = "owner_id"),
+        @Index(name = "idx_buildings_status", columnList = "status")
 })
 @Getter
 @Setter

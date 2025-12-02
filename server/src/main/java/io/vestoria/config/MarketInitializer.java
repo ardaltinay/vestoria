@@ -53,7 +53,8 @@ public class MarketInitializer {
           .xp(0L)
           .isAdmin(false)
           .build();
-      userRepository.save(botUser);
+      @SuppressWarnings({ "null", "unused" })
+      UserEntity savedBot = userRepository.save(botUser);
 
       // 2. Create Bot Warehouse (Factory)
       BuildingEntity warehouse = BuildingEntity.builder()
@@ -68,7 +69,8 @@ public class MarketInitializer {
           .cost(BigDecimal.ZERO)
           .maxStock(100000)
           .build();
-      buildingRepository.save(warehouse);
+      @SuppressWarnings({ "null", "unused" })
+      BuildingEntity savedWarehouse = buildingRepository.save(warehouse);
 
       // 3. Seed Items and Listings
       seedItems(warehouse, botUser);
@@ -112,7 +114,8 @@ public class MarketInitializer {
           .building(warehouse)
           .owner(botUser)
           .build();
-      itemRepository.save(item);
+      @SuppressWarnings({ "null", "unused" })
+      ItemEntity savedItem = itemRepository.save(item);
 
       // Create Market Listing
       MarketEntity listing = MarketEntity.builder()
@@ -122,21 +125,9 @@ public class MarketInitializer {
           .quantity(item.getQuantity())
           .isActive(true)
           .build();
-      marketRepository.save(listing);
+      @SuppressWarnings({ "null", "unused" })
+      MarketEntity savedListing = marketRepository.save(listing);
     }
-  }
-
-  private ItemTier calculateTier(double price) {
-    if (price > 400) {
-      return ItemTier.SCARCE;
-    }
-    if (price > 200) {
-      return ItemTier.HIGH;
-    }
-    if (price > 75) {
-      return ItemTier.MEDIUM;
-    }
-    return ItemTier.LOW;
   }
 
   @Value

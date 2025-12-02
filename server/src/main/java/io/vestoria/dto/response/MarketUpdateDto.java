@@ -5,16 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardStatsDto implements Serializable {
-  private BigDecimal dailyEarnings;
-  private BigDecimal dailyExpenses;
-  private Integer activeBusinesses;
-  private Double marketShare;
+public class MarketUpdateDto {
+  private String type; // "LIST" or "BUY"
+  private UUID id;
+  private String itemName;
+  private int quantity;
+  private BigDecimal price;
+  private String sellerName;
 }

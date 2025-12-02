@@ -60,6 +60,10 @@ public class UserService {
     if (dailyEarnings == null)
       dailyEarnings = BigDecimal.ZERO;
 
+    BigDecimal dailyExpenses = transactionRepository.sumExpensesByBuyerAndCreatedAtAfter(user, oneDayAgo);
+    if (dailyExpenses == null)
+      dailyExpenses = BigDecimal.ZERO;
+
     long activeBusinesses = buildingRepository.countByOwnerAndStatus(user, BuildingStatus.ACTIVE);
     long totalActiveBusinesses = buildingRepository.countByStatus(BuildingStatus.ACTIVE);
 
@@ -68,16 +72,12 @@ public class UserService {
       marketShare = ((double) activeBusinesses / totalActiveBusinesses) * 100;
     }
 
-    if (totalActiveBusinesses > 0) {
-      marketShare = ((double) activeBusinesses / totalActiveBusinesses) * 100;
-    }
-
-    return userConverter.toDashboardStatsDto(dailyEarnings, (int) activeBusinesses, marketShare);
+    return userConverter.toDashboardStatsDto(dailyEarnings, dailyExpenses, (int) activeBusinesses, marketShare);
   }
 
   public AuthResponseDto getCurrentUser(String username) {
     UserEntity user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
     return authConverter.toResponseDto(user);
   }

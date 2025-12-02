@@ -3,7 +3,7 @@ package io.vestoria.service;
 import io.vestoria.constant.Constants;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingType;
-import io.vestoria.model.ItemDefinition;
+import io.vestoria.dto.response.ItemDefinition;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 

@@ -32,11 +32,11 @@ public abstract class BaseEntity implements Serializable {
     private Long version;
 
     @Column(name = "created_time")
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdTime;
 
     @Column(name = "updated_time")
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedTime;
 
     @PrePersist

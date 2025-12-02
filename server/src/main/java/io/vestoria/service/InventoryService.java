@@ -3,6 +3,7 @@ package io.vestoria.service;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.UserEntity;
+import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -106,8 +108,7 @@ public class InventoryService {
     } else {
       // For other buildings (Factory, Farm, Mine, Garden), check if they produce this
       // item
-      if (building.getSubType().getProducedItemNames() == null ||
-          !building.getSubType().getProducedItemNames().contains(item.getName().trim())) {
+      if (!BuildingSubType.valueOf(building.getType().name()).getProducedItemNames().contains(item.getName().trim())) {
         throw new BadRequestException("Bu işletme bu ürünü kabul etmiyor");
       }
     }
@@ -155,7 +156,7 @@ public class InventoryService {
         itemRepository.save(item);
 
         // Create new item for building
-        ItemEntity newItem = ItemEntity.builder()
+        ItemEntity newItem = Objects.requireNonNull(ItemEntity.builder()
             .name(item.getName())
             .unit(item.getUnit())
             .price(item.getPrice())
@@ -165,7 +166,7 @@ public class InventoryService {
             .tier(item.getTier())
             .building(building)
             .owner(user)
-            .build();
+            .build());
         return itemRepository.save(newItem);
       } else {
         // Transfer entire item
@@ -201,7 +202,8 @@ public class InventoryService {
           .owner(user)
           .building(null) // Centralized inventory
           .build();
-      itemRepository.save(newItem);
+      @SuppressWarnings({ "null", "unused" })
+      ItemEntity saved = itemRepository.save(newItem);
     }
   }
 }

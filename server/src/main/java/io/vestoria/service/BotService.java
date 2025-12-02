@@ -61,14 +61,12 @@ public class BotService {
     for (ItemEntity item : itemsForSale) {
       if (item.getQuantity() > 0) {
 
-        long globalSupply = marketService.calculateGlobalSupply(item.getName());
-
         long globalDemand = marketService.calculateGlobalDemand(item.getName());
 
-        ItemTier tier = determineTier(item);
+        ItemTier tier = item.getTier();
         item.setTier(tier);
 
-        double supplyVal = Math.max(globalSupply, 1.0);
+        double supplyVal = 1.0;
         double demandVal = (double) globalDemand;
         double tierValue = tier.value; // 0.5, 1.0, 1.5, 2.0
 
@@ -106,7 +104,7 @@ public class BotService {
           itemRepository.save(item);
 
           // Fetch Bot User for System Buys
-          UserEntity botUser = userRepository.findByUsername("vestoria")
+          UserEntity botUser = userRepository.findByUsername("VESTORIA")
               .orElseThrow(() -> new ResourceNotFoundException("vestoria user not found"));
 
           // Record Transaction
@@ -124,7 +122,7 @@ public class BotService {
 
           // Create Notification
           String notificationMessage = String.format(
-              "%s %s dükkanından %d adet %s satın alındı. Kazanç: %s (Puan: %.2f)",
+              "%s %s dükkanından %d adet %s satın alındı. Kazanç: %s",
               owner.getUsername(), shop.getSubType(), quantityToBuy, item.getName(), totalEarnings, finalScore);
           notificationService.createNotification(owner, notificationMessage);
         } else {
@@ -139,10 +137,5 @@ public class BotService {
     shop.setSalesEndsAt(null);
     shop.setLastRevenue(totalBatchEarnings);
     buildingRepository.save(shop);
-  }
-
-  private ItemTier determineTier(ItemEntity item) {
-    // Logic based on Category
-    return ItemTier.LOW;
   }
 }

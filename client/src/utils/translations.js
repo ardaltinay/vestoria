@@ -59,3 +59,17 @@ export const getItemUnitTr = (unit) => {
       return unit
   }
 }
+
+export const getItemTierTr = (tier) => {
+  if (!tier) return ''
+  switch (tier) {
+    case 'SMALL':
+      return 'KUCUK'
+    case 'MEDIUM':
+      return 'ORTA'
+    case 'LARGE':
+      return 'BUYUK'
+    default:
+      return tier
+  }
+}

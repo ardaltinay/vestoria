@@ -12,9 +12,9 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashboardStatsDto implements Serializable {
-  private BigDecimal dailyEarnings;
-  private BigDecimal dailyExpenses;
-  private Integer activeBusinesses;
-  private Double marketShare;
+public class MarketTrendDto implements Serializable {
+  private String name;
+  private BigDecimal price;
+  private String trend; // "up", "down", "stable"
+  private Double change; // Percentage change
 }

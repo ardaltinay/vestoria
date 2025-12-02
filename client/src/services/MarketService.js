@@ -9,5 +9,8 @@ export default {
   },
   buyItem(marketItemId, data) {
     return api.post(`/market/buy/${marketItemId}`, data)
+  },
+  getMarketTrends() {
+    return api.get('/market/trends');
   }
 };

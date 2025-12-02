@@ -66,7 +66,6 @@
                   <ProductIcon :name="listing.itemName.trim()" size="md" class="group-hover:scale-110 transition-transform" />
                   <div>
                     <div class="font-medium text-slate-900 text-sm sm:text-base">{{ listing.itemName }}</div>
-                    <div class="text-xs text-slate-500 hidden sm:block">Tier {{ listing.tier }}</div>
                   </div>
                 </div>
               </td>
@@ -168,7 +167,7 @@
                   :max="selectedListing.quantity"
                   class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 font-bold text-lg"
                 >
-                <span class="text-slate-500 font-medium">{{ selectedListing.itemUnit }}</span>
+                <span class="text-slate-500 font-medium">{{ getItemUnitTr(selectedListing.itemUnit) }}</span>
               </div>
             </div>
 
@@ -317,12 +316,14 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import MarketService from '../services/MarketService'
 import InventoryService from '../services/InventoryService'
 import { useAuthStore } from '../stores/authStore'
+import { useMarketStore } from '../stores/marketStore'
 import { useToast } from '../composables/useToast'
 import { XMarkIcon, ArchiveBoxIcon, ShoppingCartIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import CurrencyIcon from '../components/CurrencyIcon.vue'
 import StarRating from '../components/StarRating.vue'
 import ProductIcon from '../components/ProductIcon.vue'
 import { formatCurrency } from '../utils/currency'
+import { getItemUnitTr } from '../utils/translations'
 
 const listings = ref([])
 const inventory = ref([])
@@ -473,6 +474,7 @@ const closeBuyModal = () => {
 }
 
 const authStore = useAuthStore()
+const marketStore = useMarketStore()
 
 const confirmBuy = async () => {
   if (!selectedListing.value || isBuying.value) return
@@ -502,11 +504,15 @@ watch(showSellModal, (newValue) => {
 
 onMounted(() => {
   fetchListings()
-  // Poll every 10 seconds
+  // Connect to WebSocket for real-time updates
+  marketStore.connect()
+  // Poll every 10 seconds as fallback
   pollingInterval = setInterval(fetchListings, 10000)
 })
 
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
+  // Disconnect from WebSocket
+  marketStore.disconnect()
 })
 </script>

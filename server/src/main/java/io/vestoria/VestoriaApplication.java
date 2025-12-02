@@ -38,7 +38,7 @@ public class VestoriaApplication {
 			PasswordEncoder passwordEncoder) {
 		return (args) -> {
 			if (userRepository.findByUsername("admin").isEmpty()) {
-				userRepository.save(UserEntity.builder()
+				UserEntity admin = UserEntity.builder()
 						.username("admin")
 						.password(passwordEncoder.encode("admin123"))
 						.email("admin@vestoria.io")
@@ -46,7 +46,8 @@ public class VestoriaApplication {
 						.level(100)
 						.xp(0L)
 						.isAdmin(true)
-						.build());
+						.build();
+				userRepository.save(admin);
 			}
 		};
 	}

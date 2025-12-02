@@ -8,9 +8,11 @@ import java.math.BigDecimal;
 @Component
 public class UserConverter {
 
-  public DashboardStatsDto toDashboardStatsDto(BigDecimal dailyEarnings, int activeBusinesses, double marketShare) {
+  public DashboardStatsDto toDashboardStatsDto(BigDecimal dailyEarnings, BigDecimal dailyExpenses, int activeBusinesses,
+      double marketShare) {
     return DashboardStatsDto.builder()
         .dailyEarnings(dailyEarnings)
+        .dailyExpenses(dailyExpenses)
         .activeBusinesses(activeBusinesses)
         .marketShare(marketShare)
         .build();

@@ -83,7 +83,7 @@ public class ProductionService {
 
   private String getItemNameForBuilding(BuildingEntity building) {
     if (building.getSubType() != null && building.getSubType().getProducedItemNames() != null) {
-      List<String> items = building.getSubType().getProducedItemNames();
+      // List<String> items = building.getSubType().getProducedItemNames();
       /*
        * if (items.length > 0 && items[0] != null && !items[0].isEmpty()) {
        * return items[0]; // Return first produced item

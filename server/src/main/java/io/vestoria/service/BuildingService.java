@@ -456,10 +456,10 @@ public class BuildingService {
         // Base production rate increases from Garden to Mine
         BigDecimal rate = switch (type) {
             case SHOP -> BigDecimal.ZERO; // Shops don't produce
-            case GARDEN -> BigDecimal.valueOf(10);
-            case FARM -> BigDecimal.valueOf(20);
+            case GARDEN -> BigDecimal.valueOf(20);
+            case FARM -> BigDecimal.valueOf(25);
             case FACTORY -> BigDecimal.valueOf(40);
-            case MINE -> BigDecimal.valueOf(50);
+            case MINE -> BigDecimal.valueOf(30);
         };
 
         // Tier Multiplier
@@ -513,20 +513,20 @@ public class BuildingService {
 
     private float getProductionDuration(BuildingType type, BuildingTier tier) {
         long baseMinutes = switch (type) {
-            case GARDEN -> 15;
-            case FARM -> 20;
-            case FACTORY -> 25;
-            case MINE -> 30;
+            case GARDEN -> 12;
+            case FARM -> 15;
+            case FACTORY -> 20;
+            case MINE -> 25;
             default -> 10;
         };
 
         if (tier != null) {
             switch (tier) {
                 case MEDIUM:
-                    baseMinutes = (long) (baseMinutes * 0.9); // 10% faster
+                    baseMinutes = (long) (baseMinutes * 0.8);
                     break;
                 case LARGE:
-                    baseMinutes = (long) (baseMinutes * 0.8); // 20% faster
+                    baseMinutes = (long) (baseMinutes * 0.6);
                     break;
                 default:
                     break;
@@ -541,10 +541,10 @@ public class BuildingService {
         if (tier != null) {
             switch (tier) {
                 case MEDIUM:
-                    baseMinutes = (long) (baseMinutes * 0.9); // 10% faster
+                    baseMinutes = (long) (baseMinutes * 0.8);
                     break;
                 case LARGE:
-                    baseMinutes = (long) (baseMinutes * 0.8); // 20% faster
+                    baseMinutes = (long) (baseMinutes * 0.6);
                     break;
                 default:
                     break;

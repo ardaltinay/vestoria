@@ -1,6 +1,7 @@
 package io.vestoria.controller;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import io.vestoria.converter.MarketConverter;
 import io.vestoria.dto.request.BuyItemRequestDto;
 import io.vestoria.dto.request.ListItemRequestDto;
 import io.vestoria.dto.response.MarketResponseDto;
+import io.vestoria.dto.response.MarketTrendDto;
 import io.vestoria.service.MarketService;
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +37,11 @@ public class MarketController {
       @RequestParam(defaultValue = "50") int size) {
 
     return ResponseEntity.ok(marketService.getActiveListings(search, page, size));
+  }
+
+  @GetMapping("/trends")
+  public ResponseEntity<List<MarketTrendDto>> getMarketTrends() {
+    return ResponseEntity.ok(marketService.getMarketTrends());
   }
 
   @PostMapping("/list/{itemId}")

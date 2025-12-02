@@ -1,6 +1,6 @@
 package io.vestoria.controller;
 
-import io.vestoria.model.ItemDefinition;
+import io.vestoria.dto.response.ItemDefinition;
 import io.vestoria.service.GameDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

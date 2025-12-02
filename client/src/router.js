@@ -46,6 +46,7 @@ const routes = [
       { path: 'mines/:id', name: 'MineDetail', component: () => import('./pages/mines/MineDetail.vue') },
       { path: 'market', name: 'Marketplace', component: () => import('./pages/Marketplace.vue') },
       { path: 'social', name: 'Social', component: () => import('./pages/Sosyal.vue') },
+      { path: 'reports', name: 'Reports', component: () => import('./pages/Reports.vue') },
     ]
   }
 ];

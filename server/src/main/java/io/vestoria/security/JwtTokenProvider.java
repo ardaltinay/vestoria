@@ -27,12 +27,13 @@ public class JwtTokenProvider {
         this.validityInMillis = validityInMillis;
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String username, List<String> roles) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityInMillis);
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim("roles", roles)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -60,6 +61,7 @@ public class JwtTokenProvider {
 
         // Token oluştururken rolleri "roles" key'i ile List<String> olarak koyduğunu
         // varsayıyorum
+        @SuppressWarnings("unchecked")
         List<String> roles = claims.get("roles", List.class);
 
         if (roles == null)

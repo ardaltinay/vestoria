@@ -1,4 +1,4 @@
-package io.vestoria.model;
+package io.vestoria.dto.response;
 
 import io.vestoria.enums.BuildingType;
 import lombok.AllArgsConstructor;
