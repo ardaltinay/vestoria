@@ -14,6 +14,7 @@ public class AuthConverter {
                 .email(entity.getEmail())
                 .balance(entity.getBalance())
                 .level(entity.getLevel())
+                .createdTime(entity.getCreatedTime())
                 .xp(entity.getXp())
                 .isAdmin(entity.getIsAdmin())
                 .build();

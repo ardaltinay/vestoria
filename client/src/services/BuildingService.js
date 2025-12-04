@@ -16,14 +16,18 @@ export default {
   },
 
   getUserBuildings() {
-    // Assuming we might add this endpoint or use a user endpoint that returns buildings
-    // For now, let's assume the backend has /build/my-buildings or similar, 
-    // OR we fetch user details which includes buildings.
-    // The backend BuildingController doesn't have getUserBuildings yet.
-    // But BuildingService has getUserBuildings(userId).
-    // We should add an endpoint for it in BuildingController.
-    // For now, I'll add a placeholder or use what I have.
-    return api.get(`/build/list?t=${new Date().getTime()}`); // Prevent caching
+    // Dedup concurrent calls
+    if (this._buildingsPromise) return this._buildingsPromise;
+
+    this._buildingsPromise = api.get('/build/list')
+      .finally(() => {
+        // Clear promise after a short delay to allow subsequent refreshes
+        setTimeout(() => {
+          this._buildingsPromise = null;
+        }, 100);
+      });
+
+    return this._buildingsPromise;
   },
   getBuildingConfigs() {
     return api.get('/build/config');

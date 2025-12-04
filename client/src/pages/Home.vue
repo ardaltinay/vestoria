@@ -26,7 +26,7 @@
         <div class="flex items-center gap-3 mb-3">
           <RouterLink to="/home/profile" class="relative group cursor-pointer">
             <img 
-              :src="`https://ui-avatars.com/api/?name=${username}&background=random`" 
+              :src="getAvatarUrl(username)" 
               :alt="username" 
               class="w-10 h-10 rounded-full border-2 border-white shadow-sm group-hover:border-primary-200 transition-colors" 
             />
@@ -263,6 +263,14 @@
             </button>
 
             <div v-if="showUserMenu" ref="userMenuDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden py-1">
+              <RouterLink 
+                to="/home/profile"
+                class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                @click="showUserMenu = false"
+              >
+                <UserIcon class="w-4 h-4" />
+                Profilim
+              </RouterLink>
               <button 
                 @click="handleLogout"
                 class="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
@@ -307,7 +315,8 @@ import {
   Cog6ToothIcon,
   SparklesIcon,
   ArchiveBoxIcon,
-  TruckIcon
+  TruckIcon,
+  UserIcon
 } from '@heroicons/vue/24/outline'
 import Logo from '../components/Logo.vue'
 import CurrencyIcon from '../components/CurrencyIcon.vue'
@@ -315,6 +324,7 @@ import AuthService from '../services/AuthService'
 import { useAuthStore } from '../stores/authStore'
 import { useToast } from '../composables/useToast'
 import { formatCurrency } from '../utils/currency'
+import { getAvatarUrl } from '../utils/avatar'
 
 const route = useRoute()
 const router = useRouter()

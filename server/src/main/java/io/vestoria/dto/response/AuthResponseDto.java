@@ -3,6 +3,7 @@ package io.vestoria.dto.response;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Builder
 public record AuthResponseDto(
@@ -12,5 +13,6 @@ public record AuthResponseDto(
     BigDecimal balance,
     Integer level,
     Long xp,
+    LocalDateTime createdTime,
     Boolean isAdmin) {
 }

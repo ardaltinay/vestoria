@@ -188,9 +188,7 @@ const handleCreate = async (payload) => {
 
 onMounted(() => {
   fetchDashboardStats()
-  // Notifications are fetched by Home.vue (parent), so we just use the store state
-  if (notifications.value.length === 0) {
-      notificationStore.fetchNotifications()
-  }
+  // Notifications are fetched by Home.vue (parent)
+  // We just use the store state which is reactive
 })
 </script>

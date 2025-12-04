@@ -54,7 +54,7 @@
               <div>
                 <h3 class="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">{{ item.name }}</h3>
                 <span class="text-xs font-medium px-2 py-0.5 rounded-full border" :class="getTypeBadgeClass(item.type)">
-                  {{ getTypeName(item.type) }} • LVL {{ item.level || 1 }}
+                  {{ getTypeName(item.type) }} • LVL {{ item.tier === 'SMALL' ? 1 : item.tier === 'MEDIUM' ? 2 : 3 }}
                 </span>
               </div>
             </div>
@@ -81,7 +81,7 @@
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
               <div class="text-xs text-slate-500 font-medium mb-1">Kapasite</div>
-              <div class="font-bold text-slate-800">{{ item.items?.length || 0 }} / {{ item.maxStock || '-' }}</div>
+              <div class="font-bold text-slate-800">{{ item.currentStock || 0 }} / {{ item.maxStock || '-' }}</div>
             </div>
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
               <div class="text-xs text-slate-500 font-medium mb-1">Gelir/Dk</div>
@@ -113,8 +113,8 @@ import {
   BuildingStorefrontIcon, 
   WrenchScrewdriverIcon, 
   TruckIcon,
-  BeakerIcon,
-  BoltIcon,
+  ArchiveBoxIcon,
+  Cog6ToothIcon,
   ArrowRightIcon
 } from '@heroicons/vue/24/outline'
 import CurrencyIcon from '../components/CurrencyIcon.vue'
@@ -174,9 +174,9 @@ onUnmounted(() => {
 const allItems = computed(() => {
   const items = [
     ...farmsStore.items.map(i => ({ ...i, type: 'FARM', icon: TruckIcon, color: 'bg-emerald-500' })),
-    ...gardensStore.items.map(i => ({ ...i, type: 'GARDEN', icon: BeakerIcon, color: 'bg-green-500' })),
-    ...factoriesStore.items.map(i => ({ ...i, type: 'FACTORY', icon: WrenchScrewdriverIcon, color: 'bg-blue-500' })),
-    ...minesStore.items.map(i => ({ ...i, type: 'MINE', icon: BoltIcon, color: 'bg-amber-600' })),
+    ...gardensStore.items.map(i => ({ ...i, type: 'GARDEN', icon: ArchiveBoxIcon, color: 'bg-green-500' })),
+    ...factoriesStore.items.map(i => ({ ...i, type: 'FACTORY', icon: Cog6ToothIcon, color: 'bg-blue-500' })),
+    ...minesStore.items.map(i => ({ ...i, type: 'MINE', icon: WrenchScrewdriverIcon, color: 'bg-amber-600' })),
     ...shopsStore.items.map(i => ({ ...i, type: 'SHOP', icon: BuildingStorefrontIcon, color: 'bg-purple-500' }))
   ]
 
@@ -272,6 +272,9 @@ function processItem(item) {
   // Enrich with config data if missing on item
   const maxStock = item.maxStock || config?.maxStock || 0
   const revenue = item.revenue || config?.incomePerMinute || config?.revenue || 0
+  
+  // Calculate current stock (sum of quantities)
+  const currentStock = item.items ? item.items.reduce((total, i) => total + i.quantity, 0) : 0
 
   return {
     ...item,
@@ -282,7 +285,8 @@ function processItem(item) {
     timeLeft,
     isWorking,
     maxStock,
-    revenue
+    revenue,
+    currentStock
   }
 }
 

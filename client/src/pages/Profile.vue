@@ -4,7 +4,7 @@
       <div class="flex flex-col items-center sm:flex-row sm:items-start gap-6">
         <div class="relative group">
           <img 
-            :src="`https://ui-avatars.com/api/?name=${user?.username}&background=random&size=128`" 
+            :src="getAvatarUrl(user?.username, 256)" 
             :alt="user?.username" 
             class="w-32 h-32 rounded-full border-4 border-white shadow-lg"
           />
@@ -17,7 +17,8 @@
             <span class="px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm font-bold border border-primary-100">
               Seviye {{ user?.level || 1 }}
             </span>
-            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm font-bold border border-emerald-100">
+            <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm font-bold border border-emerald-100 flex items-center gap-1">
+              <CurrencyIcon :size="16" variant="success" />
               {{ formatCurrency(user?.balance || 0) }}
             </span>
           </div>
@@ -46,7 +47,10 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div class="text-sm text-slate-500 font-medium mb-1">Toplam Varlık</div>
-        <div class="text-2xl font-bold text-slate-900">{{ formatCurrency(user?.netWorth || user?.balance || 0) }}</div>
+        <div class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <CurrencyIcon :size="24" variant="success" />
+          {{ formatCurrency(user?.netWorth || user?.balance || 0) }}
+        </div>
       </div>
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div class="text-sm text-slate-500 font-medium mb-1">İşletme Sayısı</div>
@@ -54,7 +58,7 @@
       </div>
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div class="text-sm text-slate-500 font-medium mb-1">Kayıt Tarihi</div>
-        <div class="text-2xl font-bold text-slate-900">{{ formatDate(user?.createdAt) }}</div>
+        <div class="text-2xl font-bold text-slate-900">{{ formatDate(user?.createdTime || user?.created_time) }}</div>
       </div>
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div class="text-sm text-slate-500 font-medium mb-1">Prestij Puanı</div>
@@ -73,6 +77,8 @@ import { useFactoriesStore } from '../stores/factoriesStore'
 import { useMinesStore } from '../stores/minesStore'
 import { useGardensStore } from '../stores/gardensStore'
 import { formatCurrency } from '../utils/currency'
+import CurrencyIcon from '../components/CurrencyIcon.vue'
+import { getAvatarUrl } from '../utils/avatar'
 
 const authStore = useAuthStore()
 const shopsStore = useShopsStore()
