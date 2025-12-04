@@ -15,10 +15,10 @@
           <tr v-if="loading" class="animate-pulse">
             <td :colspan="showPrice ? 5 : 4" class="px-4 py-8 text-center text-gray-500">Yükleniyor...</td>
           </tr>
-          <tr v-else-if="items.length === 0">
+          <tr v-else-if="filteredItems.length === 0">
             <td :colspan="showPrice ? 5 : 4" class="px-4 py-8 text-center text-gray-500">Bu işletmede henüz ürün bulunmuyor.</td>
           </tr>
-          <tr v-else v-for="item in items" :key="item.id" class="hover:bg-gray-50 transition-colors">
+          <tr v-else v-for="item in filteredItems" :key="item.id" class="hover:bg-gray-50 transition-colors">
             <td class="px-3 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 text-xs sm:text-sm">
               <div class="flex items-center gap-2">
                 <ProductIcon :name="item.subType ? gameDataStore.getItem(item.subType)?.name : item.name" size="sm" />
@@ -74,6 +74,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useGameDataStore } from '../stores/gameDataStore'
 import StarRating from './StarRating.vue'
 import ProductIcon from './ProductIcon.vue'
@@ -106,4 +107,8 @@ const props = defineProps({
 defineEmits(['transfer', 'start-edit-price', 'save-price', 'cancel-edit-price', 'update:newPrice'])
 
 const gameDataStore = useGameDataStore()
+
+const filteredItems = computed(() => {
+  return props.items.filter(item => item.quantity > 0)
+})
 </script>

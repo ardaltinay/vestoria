@@ -144,7 +144,7 @@
                       <circle cx="128" cy="128" r="110" stroke="currentColor" stroke-width="12" fill="transparent" 
                               class="text-amber-500 transition-all duration-1000 ease-linear" 
                               stroke-dasharray="691" 
-                              :stroke-dashoffset="691 - (691 * 0.7)" 
+                              :stroke-dashoffset="691 * (1 - progressPercentage)" 
                               stroke-linecap="round" />
                     </svg>
                     
@@ -152,9 +152,6 @@
                     <div class="absolute inset-0 flex items-center justify-center flex-col z-20">
                       <div class="text-sm font-bold text-amber-600 uppercase tracking-widest mb-1">Kalan Süre</div>
                       <div class="text-5xl font-black text-stone-800 tracking-tighter tabular-nums">{{ timeLeft || '--:--' }}</div>
-                      <div class="mt-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
-                        Verimlilik %100
-                      </div>
                     </div>
                   </div>
                   
@@ -525,6 +522,7 @@ const buildingConfig = computed(() => item.value ? configStore.getConfig('GARDEN
 const productionOptions = ref([])
 const selectedProduct = ref(null)
 const timeLeft = ref('')
+const progressPercentage = ref(1) // Start full
 const showUpgradeModal = ref(false)
 const showCloseModal = ref(false)
 const showProductionModal = ref(false)
@@ -586,6 +584,13 @@ const updateTimer = async () => {
   }
 
   timeLeft.value = `${minutes}:${String(seconds).padStart(2, '0')}`
+
+  // Calculate progress
+  if (buildingConfig.value?.productionDuration) {
+    const totalDuration = buildingConfig.value.productionDuration * 60 * 1000
+    const progress = Math.max(0, Math.min(1, diff / totalDuration))
+    progressPercentage.value = progress
+  }
 }
 
 

@@ -6,12 +6,12 @@
         <h1 class="text-2xl font-display font-bold text-slate-900">Finansal Raporlar</h1>
         <p class="text-slate-500 text-sm">İşletmenizin detaylı gelir ve gider analizi.</p>
       </div>
-      <div class="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-2 bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto max-w-full no-scrollbar">
         <button 
           v-for="range in [7, 30]" 
           :key="range"
           @click="selectedRange = range"
-          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+          class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0"
           :class="selectedRange === range ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
         >
           Son {{ range }} Gün
@@ -27,7 +27,7 @@
     <!-- Content -->
     <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       
-      <!-- Daily Financials -->
+      <!-- Daily Financials (Bar Chart) -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-100 bg-slate-50/50">
           <h3 class="font-bold text-slate-800 flex items-center gap-2">
@@ -35,30 +35,12 @@
             Günlük Gelir/Gider
           </h3>
         </div>
-        <div class="p-6">
-          <div class="h-64 flex items-end gap-2 justify-between">
-            <div v-for="(day, index) in chartData" :key="index" class="flex-1 flex flex-col justify-end gap-1 group relative">
-              <!-- Tooltip -->
-              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                <div class="font-bold">{{ formatDate(day.date) }}</div>
-                <div class="text-emerald-400">+{{ formatCurrency(day.income) }}</div>
-                <div class="text-rose-400">-{{ formatCurrency(day.expense) }}</div>
-              </div>
-              
-              <!-- Bars -->
-              <div class="w-full bg-emerald-500/80 hover:bg-emerald-500 transition-colors rounded-t-sm" :style="{ height: getBarHeight(day.income) }"></div>
-              <div class="w-full bg-rose-500/80 hover:bg-rose-500 transition-colors rounded-b-sm" :style="{ height: getBarHeight(day.expense) }"></div>
-            </div>
-          </div>
-          <!-- X Axis Labels -->
-          <div class="flex justify-between mt-2 text-xs text-slate-400">
-             <span>{{ formatDate(chartData[0]?.date) }}</span>
-             <span>{{ formatDate(chartData[chartData.length - 1]?.date) }}</span>
-          </div>
+        <div class="p-6 h-80">
+          <Bar v-if="barChartData" :data="barChartData" :options="barChartOptions" />
         </div>
       </div>
 
-      <!-- Category Breakdown -->
+      <!-- Category Breakdown (Doughnut Chart) -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-100 bg-slate-50/50">
           <h3 class="font-bold text-slate-800 flex items-center gap-2">
@@ -66,30 +48,23 @@
             Gelir Dağılımı
           </h3>
         </div>
-        <div class="p-0">
-          <div v-if="reportData.incomeByCategory.length === 0" class="p-8 text-center text-slate-400 text-sm">
-            Veri bulunamadı.
+        <div class="p-6 flex flex-col items-center">
+          <div class="h-64 w-full max-w-xs relative">
+             <Doughnut v-if="doughnutChartData" :data="doughnutChartData" :options="doughnutChartOptions" />
+             <div v-if="!doughnutChartData" class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
+               Veri yok
+             </div>
           </div>
-          <div v-else class="divide-y divide-slate-50">
-            <div v-for="(item, index) in reportData.incomeByCategory" :key="index" class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
-                  {{ index + 1 }}
+          
+          <!-- Legend/List -->
+          <div class="w-full mt-6 space-y-3">
+             <div v-for="(item, index) in reportData.incomeByCategory" :key="index" class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: doughnutColors[index % doughnutColors.length] }"></span>
+                  <span class="text-slate-600">{{ item.category }}</span>
                 </div>
-                <div>
-                  <div class="font-bold text-slate-800 text-sm">{{ item.category }}</div>
-                  <div class="text-xs text-slate-500">Satış Geliri</div>
-                </div>
-              </div>
-              <div class="text-right">
-                <div class="font-bold text-slate-900 text-sm">
-                  {{ formatCurrency(item.totalAmount) }}
-                </div>
-                <div class="text-xs text-emerald-600 font-medium">
-                  %{{ calculatePercentage(item.totalAmount) }}
-                </div>
-              </div>
-            </div>
+                <div class="font-bold text-slate-900">{{ formatCurrency(item.totalAmount) }}</div>
+             </div>
           </div>
         </div>
       </div>
@@ -106,6 +81,19 @@ import {
   ChartBarIcon, 
   ChartPieIcon 
 } from '@heroicons/vue/24/outline'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement
+} from 'chart.js'
+import { Bar, Doughnut } from 'vue-chartjs'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement)
 
 const loading = ref(true)
 const selectedRange = ref(7)
@@ -114,6 +102,14 @@ const reportData = ref({
   dailyExpense: [],
   incomeByCategory: []
 })
+
+const doughnutColors = [
+  '#10b981', // emerald-500
+  '#3b82f6', // blue-500
+  '#f59e0b', // amber-500
+  '#8b5cf6', // violet-500
+  '#ec4899', // pink-500
+]
 
 const fetchData = async () => {
   loading.value = true
@@ -127,57 +123,108 @@ const fetchData = async () => {
   }
 }
 
-const chartData = computed(() => {
-  // Merge income and expense by date
-  const map = new Map()
+// --- Bar Chart Logic ---
+const barChartData = computed(() => {
+  if (loading.value) return null
   
-  // Initialize dates
+  // Prepare dates
+  const labels = []
+  const incomeData = []
+  const expenseData = []
+  
   const today = new Date()
   for (let i = selectedRange.value - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     const dateStr = d.toISOString().split('T')[0]
-    map.set(dateStr, { date: dateStr, income: 0, expense: 0 })
+    
+    labels.push(new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' }).format(d))
+    
+    const income = reportData.value.dailyIncome.find(x => x.date === dateStr)?.amount || 0
+    const expense = reportData.value.dailyExpense.find(x => x.date === dateStr)?.amount || 0
+    
+    incomeData.push(income)
+    expenseData.push(expense)
   }
 
-  reportData.value.dailyIncome.forEach(item => {
-    if (map.has(item.date)) map.get(item.date).income = item.amount
-  })
-  
-  reportData.value.dailyExpense.forEach(item => {
-    if (map.has(item.date)) map.get(item.date).expense = item.amount
-  })
-
-  return Array.from(map.values())
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Gelir',
+        backgroundColor: '#10b981',
+        data: incomeData,
+        borderRadius: 4
+      },
+      {
+        label: 'Gider',
+        backgroundColor: '#f43f5e',
+        data: expenseData,
+        borderRadius: 4
+      }
+    ]
+  }
 })
 
-const maxAmount = computed(() => {
-  let max = 0
-  chartData.value.forEach(d => {
-    if (d.income > max) max = d.income
-    if (d.expense > max) max = d.expense
-  })
-  return max || 100 // Avoid division by zero
-})
-
-const getBarHeight = (amount) => {
-  const percentage = (amount / maxAmount.value) * 100
-  return `${Math.max(percentage, 2)}%` // Min height 2%
+const barChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: { usePointStyle: true, boxWidth: 8 }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      backgroundColor: '#1e293b',
+      padding: 10,
+      cornerRadius: 8
+    }
+  },
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: { font: { size: 10 } }
+    },
+    y: {
+      grid: { color: '#f1f5f9' },
+      ticks: { callback: (value) => formatCurrency(value, 'TRY', 'compact') } // simplified format
+    }
+  }
 }
 
-const totalIncome = computed(() => {
-  return reportData.value.incomeByCategory.reduce((sum, item) => sum + item.totalAmount, 0)
+// --- Doughnut Chart Logic ---
+const doughnutChartData = computed(() => {
+  if (loading.value || reportData.value.incomeByCategory.length === 0) return null
+
+  return {
+    labels: reportData.value.incomeByCategory.map(x => x.category),
+    datasets: [{
+      backgroundColor: doughnutColors,
+      data: reportData.value.incomeByCategory.map(x => x.totalAmount),
+      borderWidth: 0
+    }]
+  }
 })
 
-const calculatePercentage = (amount) => {
-  if (!totalIncome.value) return 0
-  return ((amount / totalIncome.value) * 100).toFixed(1)
-}
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' }).format(date)
+const doughnutChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context) => {
+          const value = context.raw
+          const total = context.dataset.data.reduce((a, b) => a + b, 0)
+          const percentage = ((value / total) * 100).toFixed(1) + '%'
+          return `${context.label}: ${formatCurrency(value)} (${percentage})`
+        }
+      }
+    }
+  },
+  cutout: '75%'
 }
 
 watch(selectedRange, () => {

@@ -143,7 +143,7 @@
                       <circle cx="128" cy="128" r="110" stroke="currentColor" stroke-width="12" fill="transparent" 
                               class="text-amber-500 transition-all duration-1000 ease-linear" 
                               stroke-dasharray="691" 
-                              :stroke-dashoffset="691 - (691 * 0.7)" 
+                              :stroke-dashoffset="691 * (1 - progressPercentage)" 
                               stroke-linecap="round" />
                     </svg>
                     
@@ -521,6 +521,7 @@ const { addToast } = useToast()
 const shop = computed(() => shopsStore.items.find(s => s.id === route.params.id))
 const buildingConfig = computed(() => shop.value ? configStore.getConfig('SHOP', shop.value.tier) : null)
 const timeLeft = ref('')
+const progressPercentage = ref(1) // Start full
 let timerInterval = null
 
 const isSelling = computed(() => shop.value?.isSelling)
@@ -589,6 +590,13 @@ const updateTimer = async () => {
   }
 
   timeLeft.value = `${minutes}:${String(seconds).padStart(2, '0')}`
+
+  // Calculate progress
+  if (buildingConfig.value?.salesDuration) {
+    const totalDuration = buildingConfig.value.salesDuration * 60 * 1000
+    const progress = Math.max(0, Math.min(1, diff / totalDuration))
+    progressPercentage.value = progress
+  }
 }
 
 const startSales = () => {

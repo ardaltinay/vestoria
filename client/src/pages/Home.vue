@@ -24,11 +24,13 @@
       <!-- User Profile Summary -->
       <div class="p-4 border-b border-slate-100 bg-slate-50/50">
         <div class="flex items-center gap-3 mb-3">
-          <img 
-            :src="`https://ui-avatars.com/api/?name=${username}&background=random`" 
-            :alt="username" 
-            class="w-10 h-10 rounded-full border-2 border-white shadow-sm" 
-          />
+          <RouterLink to="/home/profile" class="relative group cursor-pointer">
+            <img 
+              :src="`https://ui-avatars.com/api/?name=${username}&background=random`" 
+              :alt="username" 
+              class="w-10 h-10 rounded-full border-2 border-white shadow-sm group-hover:border-primary-200 transition-colors" 
+            />
+          </RouterLink>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-bold text-slate-900 truncate">{{ username }}</div>
             <!-- XP Bar -->
@@ -201,7 +203,7 @@
           
           <!-- Breadcrumbs or Page Title could go here -->
           <div class="hidden sm:flex items-center text-sm text-slate-500">
-            <span class="font-medium text-slate-900">Ana Sayfa</span>
+            <RouterLink to="/home" class="font-medium text-slate-900 hover:text-primary-600 transition-colors">Ana Sayfa</RouterLink>
             <ChevronRightIcon class="w-4 h-4 mx-2" />
             <span v-if="$route.name !== 'HomeMain'" class="text-slate-600">{{ currentRouteName }}</span>
           </div>
@@ -401,12 +403,26 @@ const handleLogout = async () => {
 const currentRouteName = computed(() => {
   const map = {
     'Shops': 'Dükkanlar',
+    'ShopCreate': 'Yeni Dükkan',
+    'ShopDetail': 'Dükkan Detayı',
     'Farms': 'Çiftlikler',
+    'FarmCreate': 'Yeni Çiftlik',
+    'FarmDetail': 'Çiftlik Detayı',
     'Factories': 'Fabrikalar',
+    'FactoryCreate': 'Yeni Fabrika',
+    'FactoryDetail': 'Fabrika Detayı',
     'Mines': 'Madenler',
+    'MineCreate': 'Yeni Maden',
+    'MineDetail': 'Maden Detayı',
     'Gardens': 'Bahçeler',
+    'GardenCreate': 'Yeni Bahçe',
+    'GardenDetail': 'Bahçe Detayı',
     'Inventory': 'Envanter',
-    'Social': 'Sosyal'
+    'Social': 'Sosyal',
+    'Marketplace': 'Pazar Yeri',
+    'Reports': 'Raporlar',
+    'ProductionManagement': 'İşletme Yönetimi',
+    'Profile': 'Profilim'
   }
   return map[route.name] || route.name
 })

@@ -7,6 +7,7 @@ import io.vestoria.entity.UserEntity;
 import io.vestoria.enums.BuildingType;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.TransactionType;
+import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
@@ -52,7 +53,11 @@ public class BotService {
         .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));
 
     if (shop.getType() != BuildingType.SHOP) {
-      return;
+      throw new BusinessRuleException("Bu işletme türü satış yapmak için uygun değil!");
+    }
+
+    if (!shop.getIsSelling()) {
+      throw new BusinessRuleException("Bu işletmede satışa çıkarılmış herhangi bir ürün yok!");
     }
 
     List<ItemEntity> itemsForSale = shop.getItems();

@@ -2,7 +2,8 @@
 <script setup>
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import Toast from './components/ui/Toast.vue'
+import GameToast from './components/ui/GameToast.vue'
+import FloatingText from './components/ui/FloatingText.vue'
 import { useGameDataStore } from './stores/gameDataStore'
 
 const gameDataStore = useGameDataStore()
@@ -13,7 +14,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <Toast />
+  <GameToast />
+  <FloatingText />
   <RouterView />
 </template>
 

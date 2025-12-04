@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import MarketService from '../services/MarketService'
+import SoundService from '../services/SoundService'
+import { useAuthStore } from './authStore'
+import { useFloatingText } from '../composables/useFloatingText'
+import { formatCurrency } from '../utils/currency'
 
 export const useMarketStore = defineStore('market', () => {
   const listings = ref([])
@@ -67,6 +71,18 @@ export const useMarketStore = defineStore('market', () => {
           // Remove if sold out
           listings.value = listings.value.filter(l => l.id !== update.id)
         }
+      }
+
+      // Check if current user is the seller
+      const authStore = useAuthStore()
+      if (authStore.user?.username === update.sellerName) {
+        SoundService.play('coins')
+        const { addFloatingText } = useFloatingText()
+        // Add floating text at random position near center or top right
+        addFloatingText(`+${formatCurrency(update.totalPrice)}`, window.innerWidth / 2, window.innerHeight / 2, { color: '#10b981' })
+
+        // Also refresh user balance
+        authStore.fetchUser()
       }
     }
   }

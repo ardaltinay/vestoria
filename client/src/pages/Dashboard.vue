@@ -69,16 +69,22 @@
       </div>
     </div>
 
-    <!-- Dashboard Widgets Placeholder -->
+    <!-- Dashboard Widgets -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-       <!-- Example Widgets -->
-       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+       <!-- Market Trends -->
+       <MarketTrendsWidget />
+
+       <!-- Production Summary -->
+       <ProductionWidget />
+
+       <!-- Recent Activity -->
+       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
          <h3 class="font-bold text-slate-800 mb-4">Son Aktiviteler</h3>
          <div class="space-y-4">
            <div v-if="notifications.length === 0" class="text-slate-400 text-sm">Henüz bir aktivite yok.</div>
            <div v-for="notification in notifications.slice(0, 3)" :key="notification.id" class="flex items-center gap-3 text-sm">
-             <div class="w-2 h-2 rounded-full" :class="notification.isRead ? 'bg-slate-300' : 'bg-emerald-500'"></div>
-             <span class="text-slate-600 truncate">{{ notification.message }}</span>
+             <div class="w-2 h-2 rounded-full flex-shrink-0" :class="notification.isRead ? 'bg-slate-300' : 'bg-emerald-500'"></div>
+             <span class="text-slate-600 truncate hover:whitespace-normal hover:overflow-visible transition-all duration-200 cursor-help" :title="notification.message">{{ notification.message }}</span>
              <span class="ml-auto text-slate-400 text-xs whitespace-nowrap">{{ new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
            </div>
          </div>
@@ -98,6 +104,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import UserService from '../services/UserService'
 import { useNotificationStore } from '../stores/notificationStore'
@@ -110,8 +117,11 @@ import {
   ArrowRightIcon, 
   ArrowTrendingUpIcon 
 } from '@heroicons/vue/24/outline'
+import MarketTrendsWidget from '../components/dashboard/MarketTrendsWidget.vue'
+import ProductionWidget from '../components/dashboard/ProductionWidget.vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const notificationStore = useNotificationStore()
 const { notifications } = storeToRefs(notificationStore)
 
@@ -136,7 +146,7 @@ const handleNewInvestment = () => {
 }
 
 const handleViewReports = () => {
-  addToast('Detaylı raporlar çok yakında!', 'info')
+  router.push('/home/reports')
 }
 
 const handleCreate = async (payload) => {

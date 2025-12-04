@@ -31,7 +31,7 @@
               <th class="px-6 py-3 whitespace-nowrap">Ürün</th>
               <th class="px-6 py-3 text-center whitespace-nowrap">Miktar</th>
               <th class="px-6 py-3 text-center whitespace-nowrap">Kalite</th>
-              <th class="px-6 py-3 text-center whitespace-nowrap">Fiyat</th>
+              <th class="px-6 py-3 text-center whitespace-nowrap">Maliyet</th>
               <th class="px-6 py-3 text-right whitespace-nowrap">İşlemler</th>
             </tr>
           </thead>
@@ -60,7 +60,7 @@
                 </div>
               </td>
               <td class="px-6 py-4 text-center whitespace-nowrap">
-                <Currency :amount="item.price || 0" :icon-size="16" class-name="justify-center" />
+                <Currency :amount="item.cost || item.price || 0" :icon-size="16" class-name="justify-center" />
               </td>
               <td class="px-6 py-4 text-right whitespace-nowrap">
                 <button
