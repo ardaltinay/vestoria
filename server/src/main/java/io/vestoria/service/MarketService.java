@@ -292,7 +292,7 @@ public class MarketService {
     return supply != null ? supply.longValue() : 0L;
   }
 
-  // @Cacheable("marketTrends")
+  @Cacheable("marketTrends")
   public List<MarketTrendDto> getMarketTrends() {
     LocalDateTime twentyFourHoursAgo = LocalDateTime.now().minusHours(24);
     List<TrendingItemDto> topItems = transactionRepository.findTopTrendingItems(

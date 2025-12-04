@@ -64,6 +64,12 @@
               </td>
               <td class="px-6 py-4 text-right whitespace-nowrap">
                 <button
+                  @click="openSellModal(item)"
+                  class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm mr-2"
+                >
+                  Pazara Koy
+                </button>
+                <button
                   @click="openTransferModal(item)"
                   class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
                 >
@@ -136,6 +142,91 @@
               >
                 {{ transferring ? 'Transfer Ediliyor...' : 'Transfer Et' }}
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Sell Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showSellModal" 
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        @click.self="showSellModal = false"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative">
+          <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-slate-900">İlan Oluştur</h2>
+            <button @click="showSellModal = false" class="text-slate-400 hover:text-slate-600">
+              <XMarkIcon class="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <div v-if="selectedItem">
+              <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                <ProductIcon :name="selectedItem.name" size="md" />
+                <div>
+                  <h3 class="font-bold text-slate-900">{{ selectedItem.name }}</h3>
+                  <div class="text-sm text-slate-500">Mevcut: {{ selectedItem.quantity }} {{ getItemUnitTr(selectedItem.unit) }}</div>
+                </div>
+              </div>
+
+              <form @submit.prevent="handleCreateListing" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- Quantity -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Miktar</label>
+                    <input 
+                      v-model.number="listingForm.quantity"
+                      type="number" 
+                      min="1" 
+                      :max="selectedItem.quantity"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                    >
+                  </div>
+                  
+                  <!-- Price -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Birim Fiyat (VP)</label>
+                    <input 
+                      v-model.number="listingForm.price"
+                      type="number" 
+                      min="1" 
+                      step="0.1"
+                      class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                    >
+                  </div>
+                </div>
+
+                <!-- Summary -->
+                <div v-if="listingForm.price && listingForm.quantity" class="bg-slate-50 p-3 rounded-lg text-sm flex justify-between items-center">
+                  <span class="text-slate-600">Toplam Kazanç:</span>
+                  <span class="font-bold text-emerald-600 flex items-center gap-1">
+                    <CurrencyIcon :size="16" variant="success" />
+                    {{ (listingForm.price * listingForm.quantity).toFixed(2) }}
+                  </span>
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    @click="showSellModal = false" 
+                    class="flex-1 py-2.5 text-slate-600 font-medium hover:bg-slate-50 rounded-xl transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button 
+                    type="submit"
+                    :disabled="!isValidListing || isListing"
+                    class="flex-1 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-600/20"
+                  >
+                    <span v-if="isListing">Yayınlanıyor...</span>
+                    <span v-else>İlanı Yayınla</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -310,6 +401,47 @@ async function confirmTransfer() {
     // Error handled globally
   } finally {
     transferring.value = false
+  }
+}
+
+import MarketService from '../services/MarketService'
+import CurrencyIcon from '../components/CurrencyIcon.vue'
+
+const showSellModal = ref(false)
+const listingForm = ref({ quantity: 1, price: 10 })
+const isListing = ref(false)
+
+const isValidListing = computed(() => {
+  return selectedItem.value && 
+         listingForm.value.quantity > 0 && 
+         listingForm.value.quantity <= selectedItem.value.quantity &&
+         listingForm.value.price > 0
+})
+
+function openSellModal(item) {
+  selectedItem.value = item
+  listingForm.value = { quantity: 1, price: item.price || 10 }
+  showSellModal.value = true
+}
+
+async function handleCreateListing() {
+  if (!isValidListing.value || isListing.value) return
+
+  try {
+    isListing.value = true
+    await MarketService.listItem(selectedItem.value.id, {
+      itemId: selectedItem.value.id,
+      quantity: listingForm.value.quantity,
+      price: listingForm.value.price
+    })
+    
+    addToast('İlan başarıyla oluşturuldu!', 'success')
+    showSellModal.value = false
+    await load() // Reload inventory to update quantities
+  } catch (error) {
+    // Error handled globally
+  } finally {
+    isListing.value = false
   }
 }
 

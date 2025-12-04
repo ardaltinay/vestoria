@@ -35,8 +35,8 @@ import {
   BuildingStorefrontIcon, 
   WrenchScrewdriverIcon, 
   TruckIcon,
-  BeakerIcon,
-  BoltIcon
+  ArchiveBoxIcon,
+  Cog6ToothIcon
 } from '@heroicons/vue/24/outline'
 import { useBuildingConfigStore } from '../../stores/buildingConfigStore'
 import { useFarmsStore } from '../../stores/farmsStore'
@@ -67,9 +67,9 @@ onMounted(async () => {
 const items = computed(() => {
   const allItems = [
     ...farmsStore.items.map(i => ({ ...i, type: 'FARM', icon: TruckIcon, color: 'bg-emerald-500' })),
-    ...gardensStore.items.map(i => ({ ...i, type: 'GARDEN', icon: BeakerIcon, color: 'bg-green-500' })),
-    ...factoriesStore.items.map(i => ({ ...i, type: 'FACTORY', icon: WrenchScrewdriverIcon, color: 'bg-blue-500' })),
-    ...minesStore.items.map(i => ({ ...i, type: 'MINE', icon: BoltIcon, color: 'bg-amber-600' })),
+    ...gardensStore.items.map(i => ({ ...i, type: 'GARDEN', icon: ArchiveBoxIcon, color: 'bg-green-500' })),
+    ...factoriesStore.items.map(i => ({ ...i, type: 'FACTORY', icon: Cog6ToothIcon, color: 'bg-blue-500' })),
+    ...minesStore.items.map(i => ({ ...i, type: 'MINE', icon: WrenchScrewdriverIcon, color: 'bg-amber-600' })),
     ...shopsStore.items.map(i => ({ ...i, type: 'SHOP', icon: BuildingStorefrontIcon, color: 'bg-purple-500' }))
   ]
 

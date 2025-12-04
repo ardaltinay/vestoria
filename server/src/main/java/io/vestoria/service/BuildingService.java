@@ -19,6 +19,7 @@ import io.vestoria.converter.BuildingConverter;
 import io.vestoria.dto.response.BuildingConfigDto;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -227,7 +228,7 @@ public class BuildingService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
+    @CacheEvict(value = "getUserBuildings", allEntries = true)
     public BuildingEntity createBuilding(UserEntity owner, String name, BuildingType type, BuildingTier tier,
             BuildingSubType subType) {
 
@@ -286,7 +287,7 @@ public class BuildingService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
+    @CacheEvict(value = "getUserBuildings", allEntries = true)
     public BuildingEntity upgradeBuilding(UUID buildingId, UUID userId) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
@@ -326,7 +327,7 @@ public class BuildingService {
     }
 
     @Transactional
-    @SuppressWarnings("null")
+    @CacheEvict(value = "getUserBuildings", allEntries = true)
     public void closeBuilding(UUID buildingId, UUID userId) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı"));
@@ -403,6 +404,7 @@ public class BuildingService {
         return getUserBuildings(user.getId());
     }
 
+    @Cacheable(value = "getUserBuildings", key = "#userId")
     public List<BuildingEntity> getUserBuildings(UUID userId) {
         return buildingRepository.findByOwnerId(userId);
     }
