@@ -8,16 +8,9 @@ import org.springframework.stereotype.Component;
 public class AuthConverter {
 
     public AuthResponseDto toAuthDto(UserEntity entity) {
-        return AuthResponseDto.builder()
-                .id(entity.getId().toString())
-                .username(entity.getUsername())
-                .email(entity.getEmail())
-                .balance(entity.getBalance())
-                .level(entity.getLevel())
-                .createdTime(entity.getCreatedTime())
-                .xp(entity.getXp())
-                .isAdmin(entity.getIsAdmin())
-                .build();
+        return AuthResponseDto.builder().id(entity.getId().toString()).username(entity.getUsername())
+                .email(entity.getEmail()).balance(entity.getBalance()).level(entity.getLevel())
+                .createdTime(entity.getCreatedTime()).xp(entity.getXp()).isAdmin(entity.getIsAdmin()).build();
     }
 
     public AuthResponseDto toResponseDto(UserEntity entity) {

@@ -1,5 +1,6 @@
 package io.vestoria.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vestoria.enums.ItemTier;
 import io.vestoria.enums.ItemUnit;
 import jakarta.persistence.Column;
@@ -10,22 +11,17 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 @Entity
-@Table(name = "items", indexes = {
-        @Index(name = "idx_items_name", columnList = "name"),
+@Table(name = "items", indexes = {@Index(name = "idx_items_name", columnList = "name"),
         @Index(name = "idx_items_building_id", columnList = "building_id"),
-        @Index(name = "idx_items_owner_id", columnList = "owner_id")
-})
+        @Index(name = "idx_items_owner_id", columnList = "owner_id")})
 @Getter
 @Setter
 @NoArgsConstructor

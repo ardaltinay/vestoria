@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TrendingItemDto {
-  private String itemName;
-  private Long totalAmount;
+    private String itemName;
+    private Long totalAmount;
 }

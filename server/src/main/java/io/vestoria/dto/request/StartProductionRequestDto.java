@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StartProductionRequestDto {
-  private String productId;
+    private String productId;
 }

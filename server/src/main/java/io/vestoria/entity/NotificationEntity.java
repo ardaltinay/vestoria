@@ -16,14 +16,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class NotificationEntity extends BaseEntity {
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private UserEntity user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
-  @Column(nullable = false)
-  private String message;
+    @Column(nullable = false)
+    private String message;
 
-  @Column(name = "is_read", nullable = false)
-  @Builder.Default
-  private boolean isRead = false;
+    @Column(name = "is_read", nullable = false)
+    @Builder.Default
+    private boolean isRead = false;
 }

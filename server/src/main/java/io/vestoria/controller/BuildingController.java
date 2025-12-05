@@ -9,21 +9,20 @@ import io.vestoria.dto.response.BuildingProductionTypeDto;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.service.BotService;
 import io.vestoria.service.BuildingService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/build")
@@ -36,11 +35,8 @@ public class BuildingController {
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody CreateBuildingRequestDto request, Principal principal) {
-        return ResponseEntity
-                .ok(buildingConverter.toResponseDto(
-                        buildingService.createBuilding(principal.getName(), request.getName(), request.getType(),
-                                request.getTier(),
-                                request.getSubType())));
+        return ResponseEntity.ok(buildingConverter.toResponseDto(buildingService.createBuilding(principal.getName(),
+                request.getName(), request.getType(), request.getTier(), request.getSubType())));
     }
 
     @PutMapping("/upgrade/{buildingId}")
@@ -56,11 +52,10 @@ public class BuildingController {
     }
 
     @PostMapping("/production/{buildingId}")
-    public ResponseEntity<?> setProduction(@PathVariable UUID buildingId,
-            @RequestBody SetProductionRequestDto request, Principal principal) {
-        return ResponseEntity.ok(buildingConverter
-                .toResponseDto(
-                        buildingService.setProduction(buildingId, principal.getName(), request.getProductionType())));
+    public ResponseEntity<?> setProduction(@PathVariable UUID buildingId, @RequestBody SetProductionRequestDto request,
+            Principal principal) {
+        return ResponseEntity.ok(buildingConverter.toResponseDto(
+                buildingService.setProduction(buildingId, principal.getName(), request.getProductionType())));
     }
 
     @PostMapping("/{buildingId}/start-sales")
@@ -87,8 +82,7 @@ public class BuildingController {
     @GetMapping("/list")
     public ResponseEntity<?> list(Principal principal) {
         return ResponseEntity.ok(buildingService.getUserBuildings(principal.getName()).stream()
-                .map(buildingConverter::toResponseDto)
-                .collect(Collectors.toList()));
+                .map(buildingConverter::toResponseDto).collect(Collectors.toList()));
     }
 
     @GetMapping("/production-types")
@@ -130,8 +124,8 @@ public class BuildingController {
     }
 
     @PostMapping("/{buildingId}/withdraw")
-    public ResponseEntity<?> withdraw(@PathVariable UUID buildingId,
-            @RequestBody WithdrawRequestDto request, Principal principal) {
+    public ResponseEntity<?> withdraw(@PathVariable UUID buildingId, @RequestBody WithdrawRequestDto request,
+            Principal principal) {
         buildingService.withdrawFromBuilding(buildingId, principal.getName(), request.getProductId(),
                 request.getQuantity());
         return ResponseEntity.ok("Ürünler envantere aktarıldı!");

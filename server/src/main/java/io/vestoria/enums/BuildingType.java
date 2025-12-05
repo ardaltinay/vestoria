@@ -4,7 +4,8 @@ public enum BuildingType {
     SHOP, GARDEN, FARM, FACTORY, MINE;
 
     public static BuildingType fromString(String s) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         String buildingType = s.trim().toUpperCase();
         try {
             return BuildingType.valueOf(buildingType);

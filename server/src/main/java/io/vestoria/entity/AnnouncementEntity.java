@@ -21,15 +21,15 @@ import lombok.Setter;
 @Builder
 public class AnnouncementEntity extends BaseEntity {
 
-  @Column(nullable = false)
-  private String title;
+    @Column(nullable = false)
+    private String title;
 
-  @Column(columnDefinition = "TEXT", nullable = false)
-  private String content;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
 
-  @Enumerated(EnumType.STRING)
-  private AnnouncementType type;
+    @Enumerated(EnumType.STRING)
+    private AnnouncementType type;
 
-  @Builder.Default
-  private Boolean isActive = true;
+    @Builder.Default
+    private Boolean isActive = true;
 }

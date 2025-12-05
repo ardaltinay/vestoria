@@ -10,7 +10,8 @@ public enum ItemTier {
     }
 
     public static ItemTier fromString(String s) {
-        if (s == null) return null;
+        if (s == null)
+            return null;
         String itemTier = s.trim().toUpperCase();
         try {
             return ItemTier.valueOf(itemTier);

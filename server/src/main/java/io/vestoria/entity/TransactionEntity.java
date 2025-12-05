@@ -9,21 +9,18 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Entity
-@Table(name = "market_transactions", indexes = {
-        @Index(name = "idx_transactions_buyer_id", columnList = "buyer_id"),
+@Table(name = "market_transactions", indexes = {@Index(name = "idx_transactions_buyer_id", columnList = "buyer_id"),
         @Index(name = "idx_transactions_market_item_id", columnList = "market_item_id"),
         @Index(name = "idx_transactions_item_name", columnList = "itemName"),
-        @Index(name = "idx_transactions_created_time", columnList = "createdTime")
-})
+        @Index(name = "idx_transactions_created_time", columnList = "createdTime")})
 @Getter
 @Setter
 @NoArgsConstructor

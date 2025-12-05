@@ -126,6 +126,43 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.43.0</version>
+				<dependencies>
+					<!-- Ensure Lombok is on Spotless classpath so Eclipse JDT can parse Lombok annotations -->
+					<dependency>
+						<groupId>org.projectlombok</groupId>
+						<artifactId>lombok</artifactId>
+						<version>1.18.30</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<java>
+						<!-- Limit Spotless to main sources to avoid Lombok/JDT issues in tests -->
+						<includes>
+							<include>src/main/java/**/*.java</include>
+						</includes>
+						<!-- Use Eclipse formatter with project-specific formatter config -->
+						<eclipse>
+							<file>${project.basedir}/.spotless/java-formatter.xml</file>
+						</eclipse>
+						<removeUnusedImports/>
+						<importOrder/>
+					</java>
+				</configuration>
+				<executions>
+					<!-- Build sırasında format kontrolü; uygunsuzlukta verify aşaması fail olur -->
+					<execution>
+						<id>spotless-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 

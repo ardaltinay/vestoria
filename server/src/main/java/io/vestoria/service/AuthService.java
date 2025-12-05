@@ -3,21 +3,20 @@ package io.vestoria.service;
 import io.vestoria.converter.AuthConverter;
 import io.vestoria.dto.request.LoginRequestDto;
 import io.vestoria.dto.request.RegisterRequestDto;
-import io.vestoria.dto.response.AuthResult;
 import io.vestoria.dto.response.AuthResponseDto;
+import io.vestoria.dto.response.AuthResult;
 import io.vestoria.entity.UserEntity;
+import io.vestoria.exception.BusinessRuleException;
+import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.repository.UserRepository;
 import io.vestoria.security.JwtTokenProvider;
-import io.vestoria.exception.ResourceNotFoundException;
-import io.vestoria.exception.BusinessRuleException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -57,15 +56,9 @@ public class AuthService {
             throw new BusinessRuleException("Bu Email Adresi Kullanılıyor!");
         }
 
-        UserEntity entity = UserEntity.builder()
-                .username(request.getUsername().toUpperCase())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .level(1)
-                .balance(BigDecimal.valueOf(30000))
-                .xp(1L)
-                .isAdmin(false)
-                .build();
+        UserEntity entity = UserEntity.builder().username(request.getUsername().toUpperCase())
+                .password(passwordEncoder.encode(request.getPassword())).email(request.getEmail()).level(1)
+                .balance(BigDecimal.valueOf(30000)).xp(1L).isAdmin(false).build();
 
         @SuppressWarnings("null")
         UserEntity saved = userRepository.save(entity);

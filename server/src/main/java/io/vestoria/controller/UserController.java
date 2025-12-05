@@ -4,37 +4,35 @@ import io.vestoria.dto.response.DashboardStatsDto;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.repository.UserRepository;
 import io.vestoria.service.UserService;
+import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
-  private final UserService userService;
-  private final UserRepository userRepository;
+    private final UserService userService;
+    private final UserRepository userRepository;
 
-  @GetMapping("/me")
-  public ResponseEntity<?> getCurrentUser(Principal principal) {
-    UserEntity user = userRepository.findByUsername(principal.getName())
-        .orElseThrow(() -> new RuntimeException("User not found"));
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Principal principal) {
+        UserEntity user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    return ResponseEntity.ok(userService.getCurrentUser(user.getUsername()));
-  }
+        return ResponseEntity.ok(userService.getCurrentUser(user.getUsername()));
+    }
 
-  @GetMapping("/dashboard-stats")
-  public ResponseEntity<DashboardStatsDto> getDashboardStats(Principal principal) {
-    UserEntity user = userRepository.findByUsername(principal.getName())
-        .orElseThrow(() -> new RuntimeException("User not found"));
+    @GetMapping("/dashboard-stats")
+    public ResponseEntity<DashboardStatsDto> getDashboardStats(Principal principal) {
+        UserEntity user = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    return ResponseEntity.ok(userService.getDashboardStats(user));
-  }
+        return ResponseEntity.ok(userService.getDashboardStats(user));
+    }
 
 }

@@ -1,34 +1,33 @@
 package io.vestoria.service;
 
+import io.vestoria.converter.BuildingConverter;
+import io.vestoria.dto.response.BuildingConfigDto;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.UserEntity;
-import io.vestoria.enums.BuildingType;
-import io.vestoria.enums.BuildingTier;
 import io.vestoria.enums.BuildingStatus;
 import io.vestoria.enums.BuildingSubType;
-import io.vestoria.repository.BuildingRepository;
-import io.vestoria.repository.UserRepository;
-import io.vestoria.repository.MarketRepository;
-import io.vestoria.repository.ItemRepository;
+import io.vestoria.enums.BuildingTier;
+import io.vestoria.enums.BuildingType;
+import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.exception.InsufficientBalanceException;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.exception.UnauthorizedAccessException;
-import io.vestoria.exception.BusinessRuleException;
-import io.vestoria.converter.BuildingConverter;
-import io.vestoria.dto.response.BuildingConfigDto;
+import io.vestoria.repository.BuildingRepository;
+import io.vestoria.repository.ItemRepository;
+import io.vestoria.repository.MarketRepository;
+import io.vestoria.repository.UserRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -97,9 +96,7 @@ public class BuildingService {
         long seconds = (long) (durationMinutes * 60);
 
         // Find or create the item and mark it as producing
-        ItemEntity item = building.getItems().stream()
-                .filter(i -> i.getName().equals(productId))
-                .findFirst()
+        ItemEntity item = building.getItems().stream().filter(i -> i.getName().equals(productId)).findFirst()
                 .orElse(null);
 
         if (item == null) {
@@ -121,15 +118,8 @@ public class BuildingService {
                 qualityScore = BigDecimal.valueOf(100);
             }
 
-            item = ItemEntity.builder()
-                    .name(productId)
-                    .quantity(0)
-                    .building(building)
-                    .owner(building.getOwner())
-                    .unit(unit)
-                    .tier(itemTier)
-                    .qualityScore(qualityScore)
-                    .build();
+            item = ItemEntity.builder().name(productId).quantity(0).building(building).owner(building.getOwner())
+                    .unit(unit).tier(itemTier).qualityScore(qualityScore).build();
             building.getItems().add(item);
         }
 
@@ -158,9 +148,7 @@ public class BuildingService {
         }
 
         // Find the item that was producing
-        ItemEntity item = building.getItems().stream()
-                .filter(i -> Boolean.TRUE.equals(i.getIsProducing()))
-                .findFirst()
+        ItemEntity item = building.getItems().stream().filter(i -> Boolean.TRUE.equals(i.getIsProducing())).findFirst()
                 .orElse(null);
 
         if (item == null) {
@@ -203,9 +191,7 @@ public class BuildingService {
             throw new BusinessRuleException("Geçersiz miktar");
         }
 
-        ItemEntity item = building.getItems().stream()
-                .filter(i -> i.getName().equals(productId))
-                .findFirst()
+        ItemEntity item = building.getItems().stream().filter(i -> i.getName().equals(productId)).findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
         if (item.getQuantity() < quantity) {
@@ -246,25 +232,16 @@ public class BuildingService {
         BigDecimal cost = getBuildingCost(type, tier);
 
         if (owner.getBalance().compareTo(cost) < 0) {
-            throw new InsufficientBalanceException(
-                    "Yetersiz bakiye! Bu işlem için " + cost + " TL gerekiyor.");
+            throw new InsufficientBalanceException("Yetersiz bakiye! Bu işlem için " + cost + " TL gerekiyor.");
         }
 
         owner.setBalance(owner.getBalance().subtract(cost));
         userRepository.save(owner);
 
-        BuildingEntity building = BuildingEntity.builder()
-                .owner(owner)
-                .name(name)
-                .type(type)
-                .tier(tier)
+        BuildingEntity building = BuildingEntity.builder().owner(owner).name(name).type(type).tier(tier)
                 .subType(subType) // Can be null for non-SHOP
-                .productionRate(getProductionRate(type, tier))
-                .maxSlots(getMaxSlots(tier))
-                .status(BuildingStatus.ACTIVE)
-                .cost(cost)
-                .maxStock(getStorageCapacity(type, tier))
-                .build();
+                .productionRate(getProductionRate(type, tier)).maxSlots(getMaxSlots(tier)).status(BuildingStatus.ACTIVE)
+                .cost(cost).maxStock(getStorageCapacity(type, tier)).build();
 
         return buildingRepository.save(building);
     }
@@ -273,16 +250,14 @@ public class BuildingService {
     public BuildingEntity createBuilding(String username, String name, BuildingType type, BuildingTier tier,
             BuildingSubType subType) {
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
         return createBuilding(user, name, type, tier, subType);
     }
 
     @Transactional
     public BuildingEntity upgradeBuilding(UUID buildingId, String username) {
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
         return upgradeBuilding(buildingId, user.getId());
     }
 
@@ -304,8 +279,7 @@ public class BuildingService {
         UserEntity user = building.getOwner();
 
         if (user.getBalance().compareTo(upgradeCost) < 0) {
-            throw new InsufficientBalanceException(
-                    "Yetersiz bakiye! Yükseltme için 15,000 TL gerekiyor.");
+            throw new InsufficientBalanceException("Yetersiz bakiye! Yükseltme için 15,000 TL gerekiyor.");
         }
 
         user.setBalance(user.getBalance().subtract(upgradeCost));
@@ -338,9 +312,7 @@ public class BuildingService {
 
         // Check if building has any inventory items
         if (building.getItems() != null && !building.getItems().isEmpty()) {
-            int totalItems = building.getItems().stream()
-                    .mapToInt(ItemEntity::getQuantity)
-                    .sum();
+            int totalItems = building.getItems().stream().mapToInt(ItemEntity::getQuantity).sum();
             if (totalItems > 0) {
                 throw new BusinessRuleException(
                         "Binada ürün bulunuyor. Önce tüm ürünleri satmalısınız veya kullanmalısınız.");
@@ -414,15 +386,9 @@ public class BuildingService {
         List<BuildingConfigDto> configs = new ArrayList<>();
         for (BuildingType type : BuildingType.values()) {
             for (BuildingTier tier : BuildingTier.values()) {
-                configs.add(buildingConverter.toConfigDto(
-                        type,
-                        tier,
-                        getBuildingCost(type, tier),
-                        getProductionRate(type, tier),
-                        getProductionDuration(type, tier),
-                        getSalesDuration(tier),
-                        getStorageCapacity(type, tier),
-                        getMaxSlots(tier)));
+                configs.add(buildingConverter.toConfigDto(type, tier, getBuildingCost(type, tier),
+                        getProductionRate(type, tier), getProductionDuration(type, tier), getSalesDuration(tier),
+                        getStorageCapacity(type, tier), getMaxSlots(tier)));
             }
         }
         return configs;
@@ -440,13 +406,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseCost = baseCost.add(BigDecimal.valueOf(10000));
                     break;
-                case LARGE:
+                case LARGE :
                     baseCost = baseCost.add(BigDecimal.valueOf(25000));
                     break;
-                default: // SMALL
+                default : // SMALL
                     break;
             }
         }
@@ -467,13 +433,13 @@ public class BuildingService {
         // Tier Multiplier
         if (tier != null && type != BuildingType.SHOP) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     rate = rate.multiply(BigDecimal.valueOf(1.5));
                     break;
-                case LARGE:
+                case LARGE :
                     rate = rate.multiply(BigDecimal.valueOf(2.0));
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -500,13 +466,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     base = (int) (base * 2.0);
                     break;
-                case LARGE:
+                case LARGE :
                     base = (int) (base * 5.0);
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -524,13 +490,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE:
+                case LARGE :
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -542,13 +508,13 @@ public class BuildingService {
         float baseMinutes = 10;
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE:
+                case LARGE :
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default:
+                default :
                     break;
             }
         }

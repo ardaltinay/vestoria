@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class WithdrawRequestDto {
-  private String productId;
-  private Integer quantity;
+    private String productId;
+    private Integer quantity;
 }
