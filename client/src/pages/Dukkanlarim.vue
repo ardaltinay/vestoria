@@ -93,9 +93,9 @@
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-3 mb-6">
               <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:border-orange-100 transition-colors">
-                <div class="text-xs font-bold text-slate-400 uppercase mb-1">Son Gelir</div>
+                <div class="text-xs font-bold text-slate-400 uppercase mb-1">Çeşit</div>
                 <div class="font-black text-slate-700 text-lg">
-                  <Currency :amount="shop.lastRevenue || 0" :icon-size="16" />
+                  {{ shop.items?.length || 0 }} <span class="text-xs text-slate-400 font-medium">Ürün</span>
                 </div>
               </div>
               <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:border-orange-100 transition-colors">
@@ -190,7 +190,7 @@ const convertSubTypeToTr = (subType) => {
     case 'JEWELER':
       return 'KUYUMCU'
     default:
-      return 'MARKET'
+      return 'MARKET' 
   }
 }
 

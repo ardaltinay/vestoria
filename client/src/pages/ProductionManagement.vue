@@ -84,10 +84,9 @@
               <div class="font-bold text-slate-800">{{ item.currentStock || 0 }} / {{ item.maxStock || '-' }}</div>
             </div>
             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
-              <div class="text-xs text-slate-500 font-medium mb-1">Gelir/Dk</div>
-              <div class="font-bold text-emerald-600 flex items-center gap-1">
-                <CurrencyIcon :size="14" />
-                {{ item.revenue || 0 }}
+              <div class="text-xs text-slate-500 font-medium mb-1">Çeşit</div>
+              <div class="font-bold text-slate-800 flex items-baseline gap-1">
+                {{ item.items?.length || 0 }} <span class="text-xs text-slate-500 font-normal">Ürün</span>
               </div>
             </div>
           </div>
@@ -313,13 +312,15 @@ function getTypeBadgeClass(type) {
 }
 
 function getStatusColor(status) {
-    switch(status) {
-        case 'PRODUCING': return 'text-amber-600'
-        case 'SELLING': return 'text-emerald-600'
-        case 'COMPLETED': return 'text-emerald-600'
-        case 'ACTIVE': return 'text-blue-600'
-        default: return 'text-slate-400'
-    }
+  switch (status) {
+    case 'SELLING':
+    case 'PRODUCING':
+      return 'text-emerald-600 bg-emerald-50 border-emerald-100'
+    case 'COMPLETED':
+      return 'text-blue-600 bg-blue-50 border-blue-100'
+    default:
+      return 'text-slate-500 bg-slate-50 border-slate-100'
+  }
 }
 
 function navigateToDetail(item) {
@@ -337,3 +338,4 @@ function navigateToDetail(item) {
     }
 }
 </script>
+```
