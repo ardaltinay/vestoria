@@ -293,7 +293,9 @@
                 Yönetici Notu
               </h4>
               <p class="text-sm text-amber-800 leading-relaxed relative z-10">
-                Bahçeler sürekli bakım ister. Hasat zamanını kaçırma, ürünler taze kalsın!
+                <strong>Yönetim Notu:</strong> Seviye başına üretim miktarı <strong>+%1</strong>, kalite puanı <strong>+0.2</strong> artar.
+                <br><br>
+                Şans faktörü üretimi <strong>-%10 ile +%15</strong>, kaliteyi <strong>+/- 10</strong> puan etkileyebilir.
               </p>
             </div>
           </div>

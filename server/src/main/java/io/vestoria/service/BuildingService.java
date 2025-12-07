@@ -130,9 +130,14 @@ public class BuildingService {
                 qualityScore = BigDecimal.valueOf(100);
             }
 
-            // Luck factor
-            double qualityLuck = (Math.random() * 20) - 10;
+            // Luck factor for quality: -5 to +5
+            double qualityLuck = (Math.random() * 10) - 5;
             qualityScore = qualityScore.add(BigDecimal.valueOf(qualityLuck));
+
+            // Level factor for quality: +0.2 per level
+            int userLevel = building.getOwner().getLevel() != null ? building.getOwner().getLevel() : 1;
+            double levelBonus = userLevel * 0.2;
+            qualityScore = qualityScore.add(BigDecimal.valueOf(levelBonus));
 
             // Clamp quality (min 10, max 100)
             if (qualityScore.compareTo(BigDecimal.TEN) < 0)
@@ -186,7 +191,12 @@ public class BuildingService {
 
         // Luck factor for quantity: 0.90 to 1.15 (-10% to +15%)
         double luck = 0.90 + (Math.random() * 0.25);
-        int quantity = (int) (baseQuantity * luck);
+
+        // Level factor for quantity: +1% per level
+        int userLevel = building.getOwner().getLevel() != null ? building.getOwner().getLevel() : 1;
+        double levelMultiplier = 1.0 + (userLevel * 0.01);
+
+        int quantity = (int) (baseQuantity * luck * levelMultiplier);
 
         if (quantity < 1)
             quantity = 1;

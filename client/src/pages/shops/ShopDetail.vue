@@ -303,7 +303,9 @@
                 Yönetici Notu
               </h4>
               <p class="text-sm text-amber-800 leading-relaxed relative z-10">
-                Dükkanlarda fiyatları doğru belirlemek önemlidir. Çok yüksek fiyatlar müşteri kaçırabilir!
+                <strong>Yönetim Notu:</strong> Seviye başına satış hacmi <strong>+%1</strong> artar.
+                <br><br>
+                Şans faktörü (Pazar Dalgalanması) satışları <strong>-%20 ile +%20</strong> arasında etkileyebilir.
               </p>
             </div>
           </div>

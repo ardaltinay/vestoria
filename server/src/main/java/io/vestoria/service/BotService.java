@@ -85,6 +85,11 @@ public class BotService {
                 double salesLuck = 0.8 + (Math.random() * 0.4);
                 buyPercentage = buyPercentage * salesLuck;
 
+                // Level factor for sales: +1% per level
+                int userLevel = shop.getOwner().getLevel() != null ? shop.getOwner().getLevel() : 1;
+                double levelMultiplier = 1.0 + (userLevel * 0.01);
+                buyPercentage = buyPercentage * levelMultiplier;
+
                 int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
 
                 if (quantityToBuy == 0 && buyPercentage > 0.01) {
