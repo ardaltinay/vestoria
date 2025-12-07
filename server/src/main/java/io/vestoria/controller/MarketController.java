@@ -6,9 +6,6 @@ import io.vestoria.dto.request.ListItemRequestDto;
 import io.vestoria.dto.response.MarketResponseDto;
 import io.vestoria.dto.response.MarketTrendDto;
 import io.vestoria.service.MarketService;
-import java.security.Principal;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/market")
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class MarketController {
 
     @GetMapping("/listings")
     public ResponseEntity<Page<MarketResponseDto>> getActiveListings(@RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+                                                                     @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
 
         return ResponseEntity.ok(marketService.getActiveListings(search, page, size));
     }
@@ -42,14 +43,14 @@ public class MarketController {
 
     @PostMapping("/list/{itemId}")
     public ResponseEntity<MarketResponseDto> listItem(@PathVariable UUID itemId,
-            @RequestBody ListItemRequestDto request, Principal principal) {
+                                                      @RequestBody ListItemRequestDto request, Principal principal) {
         return ResponseEntity
                 .ok(marketConverter.toResponseDto(marketService.listItem(principal.getName(), itemId, request)));
     }
 
     @PostMapping("/buy/{marketItemId}")
     public ResponseEntity<Void> buyItem(@PathVariable UUID marketItemId, @RequestBody BuyItemRequestDto request,
-            Principal principal) {
+                                        Principal principal) {
         marketService.buyItem(principal.getName(), marketItemId, request);
         return ResponseEntity.ok().build();
     }

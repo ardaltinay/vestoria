@@ -1,8 +1,9 @@
 package io.vestoria.enums;
 
 import io.vestoria.constant.Constants;
-import java.util.List;
 import lombok.Getter;
+
+import java.util.List;
 
 @Getter
 public enum BuildingSubType {
@@ -10,8 +11,8 @@ public enum BuildingSubType {
     MARKET(BuildingType.SHOP, null, Constants.MARKET_ITEMS, "Market", "Temel gıda ve ihtiyaç malzemeleri."), CLOTHING(
             BuildingType.SHOP, null, Constants.CLOTHING_ITEMS, "Giyim Mağazası",
             "Moda ve tekstil ürünleri."), GREENGROCER(BuildingType.SHOP, null, Constants.GREENGROCER_ITEMS, "Manav",
-                    "Taze meyve ve sebze."), JEWELER(BuildingType.SHOP, null, Constants.JEWELER_ITEMS, "Kuyumcu",
-                            "Değerli takı ve aksesuarlar."),
+            "Taze meyve ve sebze."), JEWELER(BuildingType.SHOP, null, Constants.JEWELER_ITEMS, "Kuyumcu",
+            "Değerli takı ve aksesuarlar."),
 
     // Gardens
     GARDEN(BuildingType.GARDEN, Constants.GARDEN_ITEMS, null, "Bahçe", "Meyve ve Sebze Bahçeleri"),
@@ -35,7 +36,7 @@ public enum BuildingSubType {
     private final String description;
 
     BuildingSubType(BuildingType parentType, List<String> producedItemNames, List<String> marketableProducts,
-            String label, String description) {
+                    String label, String description) {
         this.parentType = parentType;
         this.producedItemNames = producedItemNames;
         this.marketableProducts = marketableProducts;

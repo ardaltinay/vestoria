@@ -13,14 +13,15 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class BotService {
     }
 
     @Transactional
-    @CacheEvict(value = { "globalSupply", "globalDemand" }, allEntries = true)
+    @CacheEvict(value = {"globalSupply", "globalDemand"}, allEntries = true)
     public void processShopSales(UUID buildingId) {
         BuildingEntity shop = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));

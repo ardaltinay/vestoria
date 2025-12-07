@@ -8,11 +8,12 @@ import io.vestoria.entity.ItemEntity;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingTier;
 import io.vestoria.enums.BuildingType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -26,8 +27,8 @@ public class BuildingConverter {
     }
 
     public BuildingConfigDto toConfigDto(BuildingType type, BuildingTier tier, BigDecimal cost,
-            BigDecimal productionRate, float productionDuration, float salesDuration, Integer maxStock,
-            Integer maxSlots) {
+                                         BigDecimal productionRate, float productionDuration, float salesDuration, Integer maxStock,
+                                         Integer maxSlots) {
         return BuildingConfigDto.builder().type(type).tier(tier).cost(cost).productionRate(productionRate)
                 .productionDuration(productionDuration).salesDuration(salesDuration).maxStock(maxStock)
                 .maxSlots(maxSlots).build();

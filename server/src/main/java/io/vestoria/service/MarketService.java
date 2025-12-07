@@ -21,14 +21,6 @@ import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -38,6 +30,15 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -111,9 +112,9 @@ public class MarketService {
 
         // Publish WebSocket Event
         messagingTemplate.convertAndSend("/topic/market",
-                MarketUpdateDto.builder().type("LIST").id(savedItem.getId())
-                        .itemName(savedItem.getItem().getName()).quantity(savedItem.getQuantity())
-                        .price(savedItem.getPrice()).sellerName(savedItem.getSeller().getUsername()).build());
+                MarketUpdateDto.builder().type("LIST").id(savedItem.getId()).itemName(savedItem.getItem().getName())
+                        .quantity(savedItem.getQuantity()).price(savedItem.getPrice())
+                        .sellerName(savedItem.getSeller().getUsername()).build());
 
         return savedItem;
     }

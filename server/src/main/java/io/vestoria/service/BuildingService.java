@@ -19,17 +19,18 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.UserRepository;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -108,9 +109,8 @@ public class BuildingService {
             int maxSlots = getMaxSlots(building.getTier());
 
             if (currentSlots >= maxSlots) {
-                throw new BusinessRuleException(
-                        "Depo çeşit sınırına ulaşıldı! (Bu seviye için Max: " + maxSlots
-                                + " çeşit) Burdaki ürünleri genel envantere aktarıp yeni ürün üretebilirsiniz.");
+                throw new BusinessRuleException("Depo çeşit sınırına ulaşıldı! (Bu seviye için Max: " + maxSlots
+                        + " çeşit) Burdaki ürünleri genel envantere aktarıp yeni ürün üretebilirsiniz.");
             }
 
             ItemUnit unit = ItemUnit.PIECE;
@@ -175,9 +175,7 @@ public class BuildingService {
         }
 
         // Find the item that was producing
-        ItemEntity item = building.getItems().stream()
-                .filter(i -> Boolean.TRUE.equals(i.getIsProducing()))
-                .findFirst()
+        ItemEntity item = building.getItems().stream().filter(i -> Boolean.TRUE.equals(i.getIsProducing())).findFirst()
                 .orElse(null);
 
         if (item == null) {
@@ -210,14 +208,14 @@ public class BuildingService {
         buildingRepository.save(building);
 
         // Notify user
-        String message = String.format("%s işletmesinden %d %s %s toplandı.",
-                building.getName(), quantity, item.getUnit() == ItemUnit.KG ? "kg" : "adet", item.getName());
+        String message = String.format("%s işletmesinden %d %s %s toplandı.", building.getName(), quantity,
+                item.getUnit() == ItemUnit.KG ? "kg" : "adet", item.getName());
         notificationService.createNotification(building.getOwner(), message);
     }
 
     @Transactional
     public void withdrawFromBuilding(@NonNull UUID buildingId, @NonNull String username, @NonNull String productId,
-            int quantity) {
+                                     int quantity) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
 
@@ -257,7 +255,7 @@ public class BuildingService {
     @Transactional
     @CacheEvict(value = "getUserBuildings", allEntries = true)
     public BuildingEntity createBuilding(UserEntity owner, String name, BuildingType type, BuildingTier tier,
-            BuildingSubType subType) {
+                                         BuildingSubType subType) {
 
         // Validation: SHOP requires SubType
         if (type == BuildingType.SHOP && subType == null) {
@@ -289,7 +287,7 @@ public class BuildingService {
 
     @Transactional
     public BuildingEntity createBuilding(String username, String name, BuildingType type, BuildingTier tier,
-            BuildingSubType subType) {
+                                         BuildingSubType subType) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
         return createBuilding(user, name, type, tier, subType);
@@ -387,7 +385,7 @@ public class BuildingService {
 
     @Transactional
     public BuildingEntity setProduction(@NonNull UUID buildingId, @NonNull String username,
-            @NonNull BuildingSubType productionType) {
+                                        @NonNull BuildingSubType productionType) {
 
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));

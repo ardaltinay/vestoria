@@ -14,15 +14,16 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.UserRepository;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor

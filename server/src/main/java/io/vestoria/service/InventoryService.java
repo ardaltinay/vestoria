@@ -13,14 +13,15 @@ import io.vestoria.exception.UnauthorizedAccessException;
 import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.UserRepository;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -69,7 +70,7 @@ public class InventoryService {
     @Transactional
     @SuppressWarnings("null")
     public ItemEntity transferToBuilding(@NonNull UUID itemId, @NonNull UUID buildingId, Integer quantity,
-            @NonNull String username) {
+                                         @NonNull String username) {
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
@@ -166,7 +167,7 @@ public class InventoryService {
 
     @Transactional
     public void addItemToInventory(UserEntity user, String productName, int quantity, ItemUnit unit, ItemTier tier,
-            BigDecimal qualityScore) {
+                                   BigDecimal qualityScore) {
         // Check if item already exists in centralized inventory (building is null)
         ItemEntity existingItem = itemRepository.findAllByOwner_UsernameAndBuildingIsNull(user.getUsername()).stream()
                 .filter(i -> {
