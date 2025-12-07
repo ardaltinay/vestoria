@@ -47,9 +47,6 @@ export default {
   completeSale(buildingId) {
     return api.post(`/build/${buildingId}/complete-sale`);
   },
-  completeProduction(buildingId) {
-    return api.post(`/build/${buildingId}/complete-production`);
-  },
   withdraw(buildingId, productId, quantity) {
     return api.post(`/build/${buildingId}/withdraw`, { productId, quantity });
   }

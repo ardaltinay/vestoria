@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 font-sans flex">
+  <div class="h-screen bg-slate-50 font-sans flex overflow-hidden">
     <!-- Mobile Sidebar Overlay -->
     <div 
       v-if="isSidebarOpen" 
@@ -190,9 +190,9 @@
     </aside>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0">
       <!-- Top Header -->
-      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shadow-sm z-30">
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shadow-sm z-[60]">
         <div class="flex items-center gap-4">
           <button 
             @click="isSidebarOpen = true"
@@ -224,7 +224,7 @@
             <div
               v-if="showNotifications"
               ref="notificationDropdown"
-              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 overflow-hidden"
+              class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-[100] overflow-hidden"
             >
               <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-sm font-bold text-slate-700">Bildirimler</h3>
@@ -262,7 +262,7 @@
               <ChevronDownIcon class="w-4 h-4 text-slate-400" />
             </button>
 
-            <div v-if="showUserMenu" ref="userMenuDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden py-1">
+            <div v-if="showUserMenu" ref="userMenuDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-[100] overflow-hidden py-1">
               <RouterLink 
                 to="/home/profile"
                 class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
@@ -284,7 +284,7 @@
       </header>
 
       <!-- Main Content Area -->
-      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth">
         <div class="max-w-7xl mx-auto">
           <RouterView v-slot="{ Component }">
             <transition name="fade" mode="out-in">

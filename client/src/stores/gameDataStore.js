@@ -15,7 +15,7 @@ export const useGameDataStore = defineStore('gameData', {
     },
 
     getItemsByType: (state) => (type) => {
-      return state.items.filter(item => item.type === type)
+      return state.items.filter(item => item.type === type && item.id !== type)
     }
   },
 

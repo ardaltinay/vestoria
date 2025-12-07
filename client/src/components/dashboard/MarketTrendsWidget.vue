@@ -8,7 +8,7 @@
     <div class="h-40 relative">
       <Line v-if="chartData" :data="chartData" :options="chartOptions" />
       <div v-else class="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
-        Veri yükleniyor...
+        Gösterilecek veri yok
       </div>
     </div>
 

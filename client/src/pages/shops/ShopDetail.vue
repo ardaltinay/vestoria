@@ -11,8 +11,8 @@
                   <span class="text-4xl filter drop-shadow-md">🏪</span>
                 </div>
                 <!-- Level Badge -->
-                <div class="absolute -bottom-2 -right-2 bg-stone-900 text-white text-xs font-black px-2 py-1 rounded-lg shadow-md border-2 border-white">
-                  LVL {{ shop.tier === 'SMALL' ? 1 : shop.tier === 'MEDIUM' ? 2 : 3 }}
+                <div v-if="shop" class="absolute -bottom-2 -right-2 bg-stone-900 text-white text-xs font-black px-2 py-1 rounded-lg shadow-md border-2 border-white">
+                  LVL {{ shop.tier === 'SMALL' ? 1 : shop?.tier === 'MEDIUM' ? 2 : 3 }}
                 </div>
               </div>
               
@@ -23,8 +23,6 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                     Perakende Satış
                   </span>
-                  <span class="text-amber-600/60 font-medium text-sm">•</span>
-                  <span class="text-amber-600/70 font-medium text-sm">ID: #{{ shop?.id?.substring(0, 6) }}</span>
                 </div>
               </div>
             </div>
@@ -97,7 +95,7 @@
                 <div class="text-2xl font-black text-stone-800 mb-1">
                   <Currency :amount="shop.lastRevenue || 0" :icon-size="18" class-name="inline-flex" />
                 </div>
-                <div class="text-sm font-medium text-emerald-600">Toplam Ciro</div>
+                <div class="text-sm font-medium text-emerald-600">Son Satış Cirosu</div>
               </div>
             </div>
 
@@ -151,9 +149,6 @@
                     <div class="absolute inset-0 flex items-center justify-center flex-col z-20">
                       <div class="text-sm font-bold text-amber-600 uppercase tracking-widest mb-1">Kalan Süre</div>
                       <div class="text-5xl font-black text-stone-800 tracking-tighter tabular-nums">{{ timeLeft || '--:--' }}</div>
-                      <div class="mt-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
-                        Müşteri Akışı Yüksek
-                      </div>
                     </div>
                   </div>
                   
@@ -565,13 +560,21 @@ const updateTimer = async () => {
         await shopsStore.load()
         await authStore.fetchUser()
       } catch (error) {
-        console.error('Auto-complete failed:', error)
-        // Fallback to polling if manual trigger fails
+        console.warn('Auto-complete failed (likely done by server):', error)
+        // Check if status updated
+        await shopsStore.load()
+        if (!shop.value?.isSelling) {
+            addToast('Satış tamamlandı!', 'success')
+            await authStore.fetchUser()
+            return
+        }
+
+        // Fallback to polling
         const pollInterval = setInterval(async () => {
           await shopsStore.load()
           if (!shop.value?.isSelling) {
             clearInterval(pollInterval)
-            await shopsStore.load()
+            addToast('Satış tamamlandı!', 'success')
             await authStore.fetchUser()
           }
         }, 2000)

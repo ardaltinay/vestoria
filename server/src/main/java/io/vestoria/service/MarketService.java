@@ -6,6 +6,7 @@ import io.vestoria.dto.request.ListItemRequestDto;
 import io.vestoria.dto.response.MarketResponseDto;
 import io.vestoria.dto.response.MarketStatsDto;
 import io.vestoria.dto.response.MarketTrendDto;
+import io.vestoria.dto.response.MarketUpdateDto;
 import io.vestoria.dto.response.TrendingItemDto;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.MarketEntity;
@@ -33,8 +34,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,11 +49,10 @@ public class MarketService {
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
     private final MarketConverter marketConverter;
-    private final GameDataService gameDataService;
-    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    @SuppressWarnings("null")
+    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
     public MarketEntity listItem(UUID userId, UUID itemId, ListItemRequestDto request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -60,7 +60,7 @@ public class MarketService {
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
-        if (!item.getBuilding().getOwner().getId().equals(userId)) {
+        if (!item.getOwner().getId().equals(userId)) {
             throw new UnauthorizedAccessException("Bu ürün size ait değil");
         }
 
@@ -111,7 +111,7 @@ public class MarketService {
 
         // Publish WebSocket Event
         messagingTemplate.convertAndSend("/topic/market",
-                io.vestoria.dto.response.MarketUpdateDto.builder().type("LIST").id(savedItem.getId())
+                MarketUpdateDto.builder().type("LIST").id(savedItem.getId())
                         .itemName(savedItem.getItem().getName()).quantity(savedItem.getQuantity())
                         .price(savedItem.getPrice()).sellerName(savedItem.getSeller().getUsername()).build());
 
@@ -119,7 +119,6 @@ public class MarketService {
     }
 
     @Transactional
-    @CacheEvict(value = "activeListings", allEntries = true)
     public MarketEntity listItem(String username, UUID itemId, ListItemRequestDto request) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
@@ -135,7 +134,7 @@ public class MarketService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = "activeListings", allEntries = true)
+    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
     public void buyItem(UserEntity buyer, UUID marketItemId, BuyItemRequestDto request) {
         int maxRetries = 3;
         int attempt = 0;
@@ -243,12 +242,6 @@ public class MarketService {
                 // Retry loop continues
             }
         }
-    }
-
-    @Scheduled(fixedRate = 600000) // 10 minutes
-    @CacheEvict(value = {"globalDemand", "globalSupply"}, allEntries = true)
-    public void clearGlobalStatsCache() {
-        // This method runs automatically to clear caches
     }
 
     @Cacheable("activeListings")

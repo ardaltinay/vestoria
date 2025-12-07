@@ -9,6 +9,8 @@ import io.vestoria.enums.BuildingStatus;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingTier;
 import io.vestoria.enums.BuildingType;
+import io.vestoria.enums.ItemTier;
+import io.vestoria.enums.ItemUnit;
 import io.vestoria.exception.BusinessRuleException;
 import io.vestoria.exception.InsufficientBalanceException;
 import io.vestoria.exception.ResourceNotFoundException;
@@ -36,6 +38,7 @@ public class BuildingService {
     private final BuildingRepository buildingRepository;
     private final UserRepository userRepository;
     private final BuildingConverter buildingConverter;
+    private final NotificationService notificationService;
     private final MarketRepository marketRepository;
     private final InventoryService inventoryService;
     private final ItemRepository itemRepository;
@@ -100,23 +103,42 @@ public class BuildingService {
                 .orElse(null);
 
         if (item == null) {
-            // Algorithm to calculate initial values
-            io.vestoria.enums.ItemUnit unit = io.vestoria.enums.ItemUnit.PIECE;
-            if (building.getType() == BuildingType.FARM) {
-                unit = io.vestoria.enums.ItemUnit.KG;
+            // Check slot limit
+            int currentSlots = building.getItems().size();
+            int maxSlots = getMaxSlots(building.getTier());
+
+            if (currentSlots >= maxSlots) {
+                throw new BusinessRuleException(
+                        "Depo çeşit sınırına ulaşıldı! (Bu seviye için Max: " + maxSlots
+                                + " çeşit) Burdaki ürünleri genel envantere aktarıp yeni ürün üretebilirsiniz.");
             }
 
-            io.vestoria.enums.ItemTier itemTier = io.vestoria.enums.ItemTier.LOW;
+            ItemUnit unit = ItemUnit.PIECE;
+            if (building.getType() == BuildingType.FARM) {
+                unit = ItemUnit.KG;
+            }
+
+            ItemTier itemTier = ItemTier.LOW;
             BigDecimal qualityScore = BigDecimal.valueOf(50); // Default for SMALL/LOW
 
             if (building.getTier() == BuildingTier.MEDIUM) {
-                itemTier = io.vestoria.enums.ItemTier.MEDIUM;
+                itemTier = ItemTier.MEDIUM;
                 qualityScore = BigDecimal.valueOf(75);
             }
             if (building.getTier() == BuildingTier.LARGE) {
-                itemTier = io.vestoria.enums.ItemTier.HIGH;
+                itemTier = ItemTier.HIGH;
                 qualityScore = BigDecimal.valueOf(100);
             }
+
+            // Luck factor
+            double qualityLuck = (Math.random() * 20) - 10;
+            qualityScore = qualityScore.add(BigDecimal.valueOf(qualityLuck));
+
+            // Clamp quality (min 10, max 100)
+            if (qualityScore.compareTo(BigDecimal.TEN) < 0)
+                qualityScore = BigDecimal.TEN;
+            if (qualityScore.compareTo(BigDecimal.valueOf(100)) > 0)
+                qualityScore = BigDecimal.valueOf(100);
 
             item = ItemEntity.builder().name(productId).quantity(0).building(building).owner(building.getOwner())
                     .unit(unit).tier(itemTier).qualityScore(qualityScore).build();
@@ -148,20 +170,24 @@ public class BuildingService {
         }
 
         // Find the item that was producing
-        ItemEntity item = building.getItems().stream().filter(i -> Boolean.TRUE.equals(i.getIsProducing())).findFirst()
+        ItemEntity item = building.getItems().stream()
+                .filter(i -> Boolean.TRUE.equals(i.getIsProducing()))
+                .findFirst()
                 .orElse(null);
 
         if (item == null) {
-            // Fallback if something went wrong, maybe log it
-            // For now, we can't produce anything if we don't know what it is.
-            // But to avoid stuck state, we reset building.
             building.setIsProducing(false);
             building.setProductionEndsAt(null);
             buildingRepository.save(building);
             throw new BusinessRuleException("Üretilen ürün bulunamadı.");
         }
 
-        int quantity = building.getProductionRate().intValue();
+        int baseQuantity = building.getProductionRate().intValue();
+
+        // Luck factor for quantity: 0.90 to 1.15 (-10% to +15%)
+        double luck = 0.90 + (Math.random() * 0.25);
+        int quantity = (int) (baseQuantity * luck);
+
         if (quantity < 1)
             quantity = 1;
 
@@ -172,6 +198,11 @@ public class BuildingService {
         building.setIsProducing(false);
         building.setProductionEndsAt(null);
         buildingRepository.save(building);
+
+        // Notify user
+        String message = String.format("%s işletmesinden %d %s %s toplandı.",
+                building.getName(), quantity, item.getUnit() == ItemUnit.KG ? "kg" : "adet", item.getName());
+        notificationService.createNotification(building.getOwner(), message);
     }
 
     @Transactional
@@ -406,13 +437,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseCost = baseCost.add(BigDecimal.valueOf(10000));
                     break;
-                case LARGE :
+                case LARGE:
                     baseCost = baseCost.add(BigDecimal.valueOf(25000));
                     break;
-                default : // SMALL
+                default: // SMALL
                     break;
             }
         }
@@ -433,13 +464,13 @@ public class BuildingService {
         // Tier Multiplier
         if (tier != null && type != BuildingType.SHOP) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     rate = rate.multiply(BigDecimal.valueOf(1.5));
                     break;
-                case LARGE :
+                case LARGE:
                     rate = rate.multiply(BigDecimal.valueOf(2.0));
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -466,13 +497,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     base = (int) (base * 2.0);
                     break;
-                case LARGE :
+                case LARGE:
                     base = (int) (base * 5.0);
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -490,13 +521,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE :
+                case LARGE:
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -508,13 +539,13 @@ public class BuildingService {
         float baseMinutes = 10;
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE :
+                case LARGE:
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default :
+                default:
                     break;
             }
         }

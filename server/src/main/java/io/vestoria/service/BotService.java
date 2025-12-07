@@ -45,7 +45,7 @@ public class BotService {
     }
 
     @Transactional
-    @CacheEvict(value = {"globalSupply", "globalDemand"}, allEntries = true)
+    @CacheEvict(value = { "globalSupply", "globalDemand" }, allEntries = true)
     public void processShopSales(UUID buildingId) {
         BuildingEntity shop = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));
@@ -65,11 +65,12 @@ public class BotService {
             if (item.getQuantity() > 0) {
 
                 long globalDemand = marketService.calculateGlobalDemand(item.getName());
+                long globalSupply = marketService.calculateGlobalSupply(item.getName());
 
                 ItemTier tier = item.getTier();
                 item.setTier(tier);
 
-                double supplyVal = 1.0;
+                double supplyVal = (double) globalSupply == 0L ? 1L : globalSupply;
                 double demandVal = (double) globalDemand;
                 double tierValue = tier.value; // 0.5, 1.0, 1.5, 2.0
 
@@ -79,6 +80,10 @@ public class BotService {
                 double finalScore = Math.min(baseScore, 100.0);
 
                 double buyPercentage = finalScore / 100.0;
+
+                // Luck factor for sales (Market Volatility): 0.8 to 1.2 (+/- 20%)
+                double salesLuck = 0.8 + (Math.random() * 0.4);
+                buyPercentage = buyPercentage * salesLuck;
 
                 int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
 
@@ -116,8 +121,7 @@ public class BotService {
                             .seller(owner).marketItem(null) // Direct sale
                             .price(totalEarnings).amount(quantityToBuy).itemName(item.getName()) // Store item name
                             .build();
-                    @SuppressWarnings({"null", "unused"})
-                    TransactionEntity saved = transactionRepository.save(transaction);
+                    transactionRepository.save(transaction);
 
                     // Create Notification
                     String notificationMessage = String.format("%s %s dükkanından %d adet %s satın alındı. Kazanç: %s",

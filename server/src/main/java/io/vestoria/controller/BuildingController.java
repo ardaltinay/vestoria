@@ -116,13 +116,6 @@ public class BuildingController {
         return ResponseEntity.ok("Satış tamamlandı!");
     }
 
-    @PostMapping("/{buildingId}/complete-production")
-    public ResponseEntity<?> completeProduction(@PathVariable UUID buildingId, Principal principal) {
-        // Reusing collectProduction logic as it handles finalizing the production batch
-        buildingService.collectProduction(buildingId, principal.getName());
-        return ResponseEntity.ok("Üretim tamamlandı!");
-    }
-
     @PostMapping("/{buildingId}/withdraw")
     public ResponseEntity<?> withdraw(@PathVariable UUID buildingId, @RequestBody WithdrawRequestDto request,
             Principal principal) {

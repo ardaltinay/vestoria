@@ -11,8 +11,8 @@
                   <span class="text-4xl filter drop-shadow-md">🏭</span>
                 </div>
                 <!-- Level Badge -->
-                <div class="absolute -bottom-2 -right-2 bg-stone-900 text-white text-xs font-black px-2 py-1 rounded-lg shadow-md border-2 border-white">
-                  LVL {{ item.tier === 'SMALL' ? 1 : item.tier === 'MEDIUM' ? 2 : 3 }}
+                <div v-if="item" class="absolute -bottom-2 -right-2 bg-stone-900 text-white text-xs font-black px-2 py-1 rounded-lg shadow-md border-2 border-white">
+                  LVL {{ item.tier === 'SMALL' ? 1 : item?.tier === 'MEDIUM' ? 2 : 3 }}
                 </div>
               </div>
               
@@ -23,8 +23,6 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-stone-600"></span>
                     Endüstriyel Tesis
                   </span>
-                  <span class="text-stone-400 font-medium text-sm">•</span>
-                  <span class="text-stone-500 font-medium text-sm">ID: #{{ item?.id?.substring(0, 6) }}</span>
                 </div>
               </div>
             </div>
@@ -84,21 +82,20 @@
                 </div>
               </div>
 
-              <!-- Revenue Card -->
-              <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-5 border border-white/60 shadow-lg shadow-stone-200/50 hover:shadow-xl hover:-transtone-y-1 transition-all duration-300 group">
-                <div class="flex items-start justify-between mb-3">
-                  <div class="p-2 bg-green-100/50 rounded-xl text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+                <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-5 border border-white/60 shadow-lg shadow-stone-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="p-2 bg-purple-100/50 rounded-xl text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                      </svg>
+                    </div>
+                    <span class="text-xs font-bold text-stone-400 uppercase tracking-wider">Ürün Tipi</span>
                   </div>
-                  <span class="text-xs font-bold text-stone-400 uppercase tracking-wider">Gelir</span>
+                  <div class="text-2xl font-black text-stone-800 mb-1">
+                    {{ item.items?.length || 0 }} Adet
+                  </div>
+                  <div class="text-sm font-medium text-purple-600">Üretilen Çeşit</div>
                 </div>
-                <div class="text-2xl font-black text-stone-800 mb-1">
-                  <Currency :amount="item.revenue" :icon-size="18" class-name="inline-flex" />
-                </div>
-                <div class="text-sm font-medium text-green-600">Dakika Başına</div>
-              </div>
             </div>
 
             <!-- Production Machine Panel -->
@@ -222,7 +219,7 @@
                 </div>
                 <div v-else class="bg-stone-50">
                   <BuildingInventoryTable 
-                    :items="item.items" 
+                    :items="filteredItems" 
                     @transfer="startWithdraw" 
                     class="border-none shadow-none"
                   />
@@ -525,17 +522,23 @@ const progressPercentage = ref(1) // Start full
 const showUpgradeModal = ref(false)
 const showCloseModal = ref(false)
 const showProductionModal = ref(false)
+const now = ref(Date.now())
 let timerInterval = null
 
 const isProducing = computed(() => item.value?.isProducing)
 const canCollect = computed(() => {
     if (!item.value?.isProducing || !item.value?.productionEndsAt) return false
-    return new Date(item.value.productionEndsAt).getTime() <= new Date().getTime()
+    return new Date(item.value.productionEndsAt).getTime() <= now.value
 })
 
 const currentStock = computed(() => {
   if (!item.value?.items) return 0
   return item.value.items.reduce((total, i) => total + i.quantity, 0)
+})
+
+const filteredItems = computed(() => {
+  if (!item.value?.items) return []
+  return item.value.items.filter(i => !i.isProducing)
 })
 
 const updateTimer = async () => {
@@ -545,14 +548,14 @@ const updateTimer = async () => {
   }
   
   const end = new Date(item.value.productionEndsAt).getTime()
-  const now = new Date().getTime()
+  now.value = Date.now()
 
   if (isNaN(end)) {
     timeLeft.value = ''
     return
   }
 
-  const diff = end - now
+  const diff = end - now.value
   
   if (diff <= 0) {
     timeLeft.value = 'Tamamlandı'
@@ -561,16 +564,7 @@ const updateTimer = async () => {
       timerInterval = null
     }
     
-    setTimeout(async () => {
-      try {
-        await BuildingService.completeProduction(item.value.id)
-        addToast('Üretim toplandı!', 'success')
-        await store.load()
-      } catch (error) {
-        console.error(error)
-      }
-    }, 1000)
-    
+    // Auto-collect removed. User must click collect button.
     return
   }
   
@@ -604,6 +598,11 @@ async function confirmStartProduction() {
     addToast('Üretim başladı!', 'success')
     selectedProduct.value = null
     await store.load()
+
+    if (!timerInterval) {
+      timerInterval = setInterval(updateTimer, 1000)
+    }
+    updateTimer()
   } catch (error) {
     addToast('Üretim başlatılamadı: ' + (error.response?.data?.message || error.message), 'error')
   }
