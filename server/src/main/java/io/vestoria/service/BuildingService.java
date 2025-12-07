@@ -131,7 +131,7 @@ public class BuildingService {
             }
 
             // Luck factor for quality: -5 to +5
-            double qualityLuck = (Math.random() * 10) - 5;
+            double qualityLuck = (Math.random() * 20) - 10;
             qualityScore = qualityScore.add(BigDecimal.valueOf(qualityLuck));
 
             // Level factor for quality: +0.2 per level
