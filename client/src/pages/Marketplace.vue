@@ -86,14 +86,25 @@
               </td>
               <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
                 <button 
+                  v-if="listing.sellerUsername !== currentUser?.username"
                   @click="openBuyModal(listing)"
-                  :disabled="listing.sellerUsername === currentUser?.username"
-                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md active:scale-95"
-                  :title="listing.sellerUsername === currentUser?.username ? 'Kendi ürününüzü satın alamazsınız' : 'Satın Al'"
+                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md active:scale-95"
+                  title="Satın Al"
                 >
                   <ShoppingCartIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
                   <span class="hidden sm:inline">Satın Al</span>
                   <span class="sm:hidden">Al</span>
+                </button>
+                <button 
+                  v-else
+                  @click="handleCancelListing(listing)"
+                  :disabled="isCancelling"
+                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-red-100 text-red-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-200 transition-colors shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+                  title="İlanı Kaldır"
+                >
+                  <XMarkIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
+                  <span class="hidden sm:inline">Kaldır</span>
+                  <span class="sm:hidden">Sil</span>
                 </button>
               </td>
             </tr>
@@ -195,6 +206,44 @@
               >
                 <span v-if="isBuying">İşleniyor...</span>
                 <span v-else>Satın Al</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Cancel Confirmation Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showCancelModal && listingToCancel" 
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        @click.self="closeCancelModal"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+          <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <XMarkIcon class="w-8 h-8 text-red-600" />
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">İlanı Kaldır</h3>
+            <p class="text-slate-500 mb-6">
+              Bu ilanı kaldırmak istediğinize emin misiniz? Ürünler envanterinize iade edilecektir.
+            </p>
+            
+            <div class="flex gap-3">
+              <button 
+                @click="closeCancelModal" 
+                class="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                Vazgeç
+              </button>
+              <button 
+                @click="confirmCancel"
+                :disabled="isCancelling"
+                class="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-red-600/20"
+              >
+                <span v-if="isCancelling">Kaldırılıyor...</span>
+                <span v-else>Evet, Kaldır</span>
               </button>
             </div>
           </div>
@@ -325,22 +374,33 @@ import ProductIcon from '../components/ProductIcon.vue'
 import { formatCurrency } from '../utils/currency'
 import { getItemUnitTr } from '../utils/translations'
 
-const listings = ref([])
+const authStore = useAuthStore()
+const marketStore = useMarketStore()
+const currentUser = computed(() => authStore.user)
+
+const listings = computed(() => marketStore.listings)
 const inventory = ref([])
 const showSellModal = ref(false)
 const showBuyModal = ref(false)
 const loadingInventory = ref(false)
 const isListing = ref(false)
 const isBuying = ref(false)
+const isCancelling = ref(false)
 const selectedItem = ref(null)
 const selectedListing = ref(null)
 const buyQuantity = ref(1)
 
-// Pagination & Search
-const currentPage = ref(0)
-const totalPages = ref(0)
+// Cancel Modal State
+const showCancelModal = ref(false)
+const listingToCancel = ref(null)
+
+// Pagination & Search linked to store
+const currentPage = computed({
+  get: () => marketStore.currentPage,
+  set: (val) => marketStore.currentPage = val
+})
+const totalPages = computed(() => marketStore.totalPages)
 const searchQuery = ref('')
-const pageSize = 50
 
 const listingForm = ref({
   quantity: 1,
@@ -348,7 +408,6 @@ const listingForm = ref({
 })
 
 const { addToast } = useToast()
-let pollingInterval = null
 
 const isValidListing = computed(() => {
   return selectedItem.value && 
@@ -386,21 +445,8 @@ const itemUnitToTr = (unit) => {
 
 const fetchListings = async () => {
   try {
-    const response = await MarketService.getActiveListings({
-      page: currentPage.value,
-      size: pageSize,
-      search: searchQuery.value || null
-    })
-    
-    // Check if response is paginated (has content property)
-    if (response.data.content) {
-      listings.value = response.data.content
-      totalPages.value = response.data.totalPages
-    } else {
-      // Fallback for non-paginated response (if any)
-      listings.value = response.data
-      totalPages.value = 1
-    }
+    await marketStore.loadListings(currentPage.value, searchQuery.value || '')
+    // Store handles state updates
   } catch (error) {
     console.error('Error fetching listings:', error)
   }
@@ -473,9 +519,6 @@ const closeBuyModal = () => {
   buyQuantity.value = 1
 }
 
-const authStore = useAuthStore()
-const marketStore = useMarketStore()
-
 const confirmBuy = async () => {
   if (!selectedListing.value || isBuying.value) return
   
@@ -496,6 +539,33 @@ const confirmBuy = async () => {
   }
 }
 
+const handleCancelListing = (listing) => {
+  listingToCancel.value = listing
+  showCancelModal.value = true
+}
+
+const closeCancelModal = () => {
+  showCancelModal.value = false
+  listingToCancel.value = null
+}
+
+const confirmCancel = async () => {
+  if (!listingToCancel.value || isCancelling.value) return
+
+  try {
+    isCancelling.value = true
+    await MarketService.cancelListing(listingToCancel.value.id)
+    addToast('İlan başarıyla kaldırıldı ve ürünler envantere eklendi.', 'success')
+    closeCancelModal()
+  } catch (error) {
+    console.error('Cancel failed', error)
+    const msg = error.response?.data?.message || 'İlan kaldırılamadı'
+    addToast(msg, 'error')
+  } finally {
+    isCancelling.value = false
+  }
+}
+
 watch(showSellModal, (newValue) => {
   if (newValue) {
     fetchInventory()
@@ -506,12 +576,9 @@ onMounted(() => {
   fetchListings()
   // Connect to WebSocket for real-time updates
   marketStore.connect()
-  // Poll every 10 seconds as fallback
-  pollingInterval = setInterval(fetchListings, 10000)
 })
 
 onUnmounted(() => {
-  if (pollingInterval) clearInterval(pollingInterval)
   // Disconnect from WebSocket
   marketStore.disconnect()
 })

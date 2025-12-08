@@ -19,18 +19,17 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.UserRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -215,7 +214,7 @@ public class BuildingService {
 
     @Transactional
     public void withdrawFromBuilding(@NonNull UUID buildingId, @NonNull String username, @NonNull String productId,
-                                     int quantity) {
+            int quantity) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
 
@@ -253,9 +252,37 @@ public class BuildingService {
     }
 
     @Transactional
+    public void updateItemPrice(@NonNull UUID buildingId, @NonNull UUID itemId, @NonNull String username,
+            @NonNull BigDecimal price) {
+        BuildingEntity building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
+
+        if (!building.getOwner().getId().equals(user.getId())) {
+            throw new UnauthorizedAccessException("Bu işletme size ait değil");
+        }
+
+        if (price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException("Fiyat 0'dan küçük olamaz.");
+        }
+
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
+
+        if (!item.getBuilding().getId().equals(buildingId)) {
+            throw new BusinessRuleException("Bu ürün bu işletmeye ait değil.");
+        }
+
+        item.setPrice(price);
+        itemRepository.save(item);
+    }
+
+    @Transactional
     @CacheEvict(value = "getUserBuildings", allEntries = true)
     public BuildingEntity createBuilding(UserEntity owner, String name, BuildingType type, BuildingTier tier,
-                                         BuildingSubType subType) {
+            BuildingSubType subType) {
 
         // Validation: SHOP requires SubType
         if (type == BuildingType.SHOP && subType == null) {
@@ -287,7 +314,7 @@ public class BuildingService {
 
     @Transactional
     public BuildingEntity createBuilding(String username, String name, BuildingType type, BuildingTier tier,
-                                         BuildingSubType subType) {
+            BuildingSubType subType) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı: " + username));
         return createBuilding(user, name, type, tier, subType);
@@ -385,7 +412,7 @@ public class BuildingService {
 
     @Transactional
     public BuildingEntity setProduction(@NonNull UUID buildingId, @NonNull String username,
-                                        @NonNull BuildingSubType productionType) {
+            @NonNull BuildingSubType productionType) {
 
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -445,13 +472,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseCost = baseCost.add(BigDecimal.valueOf(10000));
                     break;
-                case LARGE:
+                case LARGE :
                     baseCost = baseCost.add(BigDecimal.valueOf(25000));
                     break;
-                default: // SMALL
+                default : // SMALL
                     break;
             }
         }
@@ -472,13 +499,13 @@ public class BuildingService {
         // Tier Multiplier
         if (tier != null && type != BuildingType.SHOP) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     rate = rate.multiply(BigDecimal.valueOf(1.5));
                     break;
-                case LARGE:
+                case LARGE :
                     rate = rate.multiply(BigDecimal.valueOf(2.0));
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -505,13 +532,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     base = (int) (base * 2.0);
                     break;
-                case LARGE:
+                case LARGE :
                     base = (int) (base * 5.0);
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -529,13 +556,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE:
+                case LARGE :
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default:
+                default :
                     break;
             }
         }
@@ -547,13 +574,13 @@ public class BuildingService {
         float baseMinutes = 10;
         if (tier != null) {
             switch (tier) {
-                case MEDIUM:
+                case MEDIUM :
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE:
+                case LARGE :
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default:
+                default :
                     break;
             }
         }

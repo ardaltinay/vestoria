@@ -4,6 +4,11 @@ import io.vestoria.dto.response.MarketStatsDto;
 import io.vestoria.entity.MarketEntity;
 import io.vestoria.entity.UserEntity;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,12 +16,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Repository
 public interface MarketRepository extends JpaRepository<MarketEntity, UUID> {
@@ -46,5 +45,5 @@ public interface MarketRepository extends JpaRepository<MarketEntity, UUID> {
     List<MarketStatsDto> findMarketStatsByItemNames(@Param("itemNames") List<String> itemNames);
 
     Optional<MarketEntity> findBySellerAndItemNameAndPriceAndIsActiveTrue(UserEntity seller, String itemName,
-                                                                          BigDecimal price);
+            BigDecimal price);
 }

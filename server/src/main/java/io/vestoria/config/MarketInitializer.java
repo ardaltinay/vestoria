@@ -14,16 +14,15 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.UserRepository;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -47,16 +46,14 @@ public class MarketInitializer {
                     .password(passwordEncoder.encode("vestoria_123")).email("bot@vestoria.io")
                     .balance(BigDecimal.valueOf(900_000_000)) // Rich bot
                     .level(100).xp(0L).isAdmin(false).build();
-            @SuppressWarnings({"null", "unused"})
-            UserEntity savedBot = userRepository.save(botUser);
+            userRepository.save(botUser);
 
             // 2. Create Bot Warehouse (Factory)
             BuildingEntity warehouse = BuildingEntity.builder().name("Vestoria Building").owner(botUser)
                     .type(BuildingType.FACTORY).tier(BuildingTier.LARGE).subType(BuildingSubType.GENERIC)
                     .productionRate(BigDecimal.ZERO).maxSlots(10000).status(BuildingStatus.ACTIVE).cost(BigDecimal.ZERO)
                     .maxStock(100000).build();
-            @SuppressWarnings({"null", "unused"})
-            BuildingEntity savedWarehouse = buildingRepository.save(warehouse);
+            buildingRepository.save(warehouse);
 
             // 3. Seed Items and Listings
             seedItems(warehouse, botUser);
@@ -82,7 +79,7 @@ public class MarketInitializer {
 
                 // Jewelry Items
                 new SeedItem("Altın Kolye", ItemUnit.PIECE, 800.0, ItemTier.SCARCE),
-                new SeedItem("Gümüş Yüzük", ItemUnit.PIECE, 450.0, ItemTier.SCARCE),
+                new SeedItem("Gümüş Yüzük", ItemUnit.PIECE, 250.0, ItemTier.SCARCE),
 
                 // Industrial / Raw Materials
                 new SeedItem("Demir", ItemUnit.KG, 50.0, ItemTier.MEDIUM),

@@ -3,9 +3,8 @@ package io.vestoria.dto.request;
 import io.vestoria.enums.AnnouncementType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.io.Serializable;
+import lombok.Data;
 
 @Data
 public class CreateAnnouncementRequestDto implements Serializable {

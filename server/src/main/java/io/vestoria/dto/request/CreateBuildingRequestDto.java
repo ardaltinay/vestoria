@@ -3,10 +3,9 @@ package io.vestoria.dto.request;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingTier;
 import io.vestoria.enums.BuildingType;
-import lombok.Data;
-
 import java.io.Serializable;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class CreateBuildingRequestDto implements Serializable {

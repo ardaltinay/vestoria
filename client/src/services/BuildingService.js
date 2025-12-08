@@ -49,5 +49,12 @@ export default {
   },
   withdraw(buildingId, productId, quantity) {
     return api.post(`/build/${buildingId}/withdraw`, { productId, quantity });
+  },
+  updateItemPrice(buildingId, itemId, price) {
+    return api.put(`/build/${buildingId}/items/${itemId}/price`, price, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   }
 };

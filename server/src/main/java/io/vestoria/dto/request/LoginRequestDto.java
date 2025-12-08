@@ -1,9 +1,8 @@
 package io.vestoria.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-
 import java.io.Serializable;
+import lombok.Data;
 
 @Data
 public class LoginRequestDto implements Serializable {

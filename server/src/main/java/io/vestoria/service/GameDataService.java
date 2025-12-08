@@ -4,11 +4,10 @@ import io.vestoria.constant.Constants;
 import io.vestoria.dto.response.ItemDefinition;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.enums.BuildingType;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 @Service
 public class GameDataService {
@@ -43,7 +42,7 @@ public class GameDataService {
             if (subType.getProducedItemNames() != null && !subType.getProducedItemNames().isEmpty()) {
                 // Add the building definition itself (e.g. FARM, MINE, GARDEN)
                 // This allows frontend to look up the building type and see what it produces
-                if (!items.stream().anyMatch(i -> i.getId().equals(subType.name()))) {
+                if (items.stream().noneMatch(i -> i.getId().equals(subType.name()))) {
                     items.add(ItemDefinition.builder().id(subType.name()).name(subType.getLabel())
                             .label(subType.getLabel()).description(subType.getDescription())
                             .type(subType.getParentType()).producedItemNames(subType.getProducedItemNames()).build());

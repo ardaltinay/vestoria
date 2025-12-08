@@ -21,6 +21,14 @@ import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.MarketRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -30,15 +38,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +52,7 @@ public class MarketService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
     public MarketEntity listItem(UUID userId, UUID itemId, ListItemRequestDto request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -135,7 +134,7 @@ public class MarketService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
     public void buyItem(UserEntity buyer, UUID marketItemId, BuyItemRequestDto request) {
         int maxRetries = 3;
         int attempt = 0;
@@ -144,6 +143,10 @@ public class MarketService {
             try {
                 MarketEntity marketItem = marketRepository.findById(marketItemId)
                         .orElseThrow(() -> new ResourceNotFoundException("Pazar ürünü bulunamadı"));
+
+                if (marketItem.getSeller().getId().equals(buyer.getId())) {
+                    throw new BusinessRuleException("Kendi ürününüzü satın alamazsınız");
+                }
 
                 if (!marketItem.getIsActive()) {
                     throw new BusinessRuleException("Bu ürün artık satışta değil");
@@ -173,7 +176,7 @@ public class MarketService {
                 int quantity = request.getQuantity();
 
                 // Update Market Item (Skip if seller is Vestoria)
-                if (!"VESTORIA".equals(seller.getUsername())) {
+                if (!"vestoria".equals(seller.getUsername())) {
                     marketItem.setQuantity(marketItem.getQuantity() - quantity);
                     if (marketItem.getQuantity() <= 0) {
                         marketItem.setIsActive(false);
@@ -212,7 +215,8 @@ public class MarketService {
                 } else {
                     // Create new item in centralized inventory
                     ItemEntity newItem = ItemEntity.builder().name(marketItem.getItem().getName())
-                            .unit(marketItem.getItem().getUnit()).price(marketItem.getItem().getPrice())
+                            .unit(marketItem.getItem().getUnit()).price(null) // Price is null until user sets it
+                            .cost(marketItem.getPrice()) // Cost is what they paid
                             .quantity(quantity).qualityScore(marketItem.getItem().getQualityScore())
                             .tier(marketItem.getItem().getTier()).building(null) // Centralized inventory - no building
                             .owner(buyer) // Set owner
@@ -245,7 +249,43 @@ public class MarketService {
         }
     }
 
-    @Cacheable("activeListings")
+    @Transactional
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
+    public void cancelListing(String username, UUID listingId) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
+
+        MarketEntity listing = marketRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("İlan bulunamadı"));
+
+        if (!listing.getSeller().getId().equals(user.getId())) {
+            throw new UnauthorizedAccessException("Bu ilanı iptal etme yetkiniz yok");
+        }
+
+        if (!listing.getIsActive()) {
+            throw new BusinessRuleException("Bu ilan zaten aktif değil");
+        }
+
+        // Restore quantity to item
+        ItemEntity item = listing.getItem();
+        item.setQuantity(item.getQuantity() + listing.getQuantity());
+        itemRepository.save(item);
+
+        // Deactivate listing
+        listing.setIsActive(false);
+        marketRepository.save(listing);
+
+        // Publish WebSocket Event
+        messagingTemplate.convertAndSend("/topic/market",
+                MarketUpdateDto.builder()
+                        .type("CANCEL")
+                        .id(listing.getId())
+                        // Other fields can be null for CANCEL
+                        .build());
+    }
+
+    // @Cacheable("activeListings") - Disabled due to Redis serialization issues
+    // with PageImpl
     public Page<MarketResponseDto> getActiveListings(String search, int page, int size) {
         // Note: We are not caching search results for now as they are dynamic
         String searchTerm = search != null ? "%" + search.toLowerCase() + "%" : null;

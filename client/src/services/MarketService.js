@@ -7,8 +7,11 @@ export default {
   listItem(itemId, data) {
     return api.post(`/market/list/${itemId}`, data)
   },
-  buyItem(marketItemId, data) {
-    return api.post(`/market/buy/${marketItemId}`, data)
+  buyItem(marketItemId, request) {
+    return api.post(`/market/buy/${marketItemId}`, request)
+  },
+  cancelListing(marketItemId) {
+    return api.delete(`/market/listings/${marketItemId}`)
   },
   getMarketTrends() {
     return api.get('/market/trends');

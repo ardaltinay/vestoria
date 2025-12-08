@@ -185,7 +185,7 @@
 
       <!-- Footer -->
       <div class="p-4 border-t border-slate-100 text-xs text-center text-slate-400">
-        Vestoria v2.0 &copy; 2025
+        Vestoria &copy; 2025
       </div>
     </aside>
 

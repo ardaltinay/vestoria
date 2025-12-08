@@ -1,5 +1,6 @@
 package io.vestoria.service;
 
+import io.vestoria.constant.Constants;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.TransactionEntity;
@@ -13,15 +14,14 @@ import io.vestoria.repository.BuildingRepository;
 import io.vestoria.repository.ItemRepository;
 import io.vestoria.repository.TransactionRepository;
 import io.vestoria.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class BotService {
     }
 
     @Transactional
-    @CacheEvict(value = {"globalSupply", "globalDemand"}, allEntries = true)
+    @CacheEvict(value = { "globalSupply", "globalDemand", "getUserBuildings" }, allEntries = true)
     public void processShopSales(UUID buildingId) {
         BuildingEntity shop = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));
@@ -55,12 +55,13 @@ public class BotService {
             throw new BusinessRuleException("Bu işletme türü satış yapmak için uygun değil!");
         }
 
-        if (!shop.getIsSelling()) {
+        if (!Boolean.TRUE.equals(shop.getIsSelling())) {
             throw new BusinessRuleException("Bu işletmede satışa çıkarılmış herhangi bir ürün yok!");
         }
 
         List<ItemEntity> itemsForSale = shop.getItems();
         BigDecimal totalBatchEarnings = BigDecimal.ZERO;
+        StringBuilder salesSummary = new StringBuilder();
 
         for (ItemEntity item : itemsForSale) {
             if (item.getQuantity() > 0) {
@@ -91,10 +92,46 @@ public class BotService {
                 double levelMultiplier = 1.0 + (userLevel * 0.01);
                 buyPercentage = buyPercentage * levelMultiplier;
 
+                // Price Factor Calculation
+                BigDecimal salesPrice = item.getPrice(); // User set price
+
+                // Get Base Price for Reference
+                BigDecimal basePrice = Constants.BASE_PRICES.get(item.getName());
+                if (basePrice == null) {
+                    basePrice = BigDecimal.valueOf(10); // Default fallback
+                }
+
+                double priceMultiplier = 1.0;
+                if (basePrice.compareTo(BigDecimal.ZERO) > 0) {
+                    double ratio = salesPrice.doubleValue() / basePrice.doubleValue();
+                    if (ratio <= 1.0) {
+                        // Cheaper than market base: Boost sales
+                        priceMultiplier = 1.0 + (1.0 - ratio) * 2;
+                    } else {
+                        // More expensive: Reduce sales
+                        priceMultiplier = 1.0 / (ratio * ratio);
+                    }
+                }
+                buyPercentage = buyPercentage * priceMultiplier;
+
                 int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
+
+                // Log debug info
+                System.out.println("Processing item: " + item.getName());
+                System.out.println("Demand: " + globalDemand + ", Supply: " + globalSupply);
+                System.out.println("Buy %: " + buyPercentage + ", Qty to buy: " + quantityToBuy);
 
                 if (quantityToBuy == 0 && buyPercentage > 0.01) {
                     quantityToBuy = 1;
+                }
+
+                // Guarantee at least 1 sale if price is not invalid (extremely high)
+                // If price is less than 3x base price, ensure at least 1 item is sold 50% of
+                // the time (random chance)
+                if (quantityToBuy == 0 && priceMultiplier > 0.1) {
+                    if (Math.random() > 0.5) {
+                        quantityToBuy = 1;
+                    }
                 }
 
                 if (quantityToBuy > item.getQuantity()) {
@@ -102,7 +139,7 @@ public class BotService {
                 }
 
                 if (quantityToBuy > 0) {
-                    BigDecimal pricePerUnit = item.getPrice();
+                    BigDecimal pricePerUnit = salesPrice;
                     BigDecimal totalEarnings = pricePerUnit.multiply(BigDecimal.valueOf(quantityToBuy));
                     totalBatchEarnings = totalBatchEarnings.add(totalEarnings);
 
@@ -118,7 +155,7 @@ public class BotService {
                     itemRepository.save(item);
 
                     // Fetch Bot User for System Buys
-                    UserEntity botUser = userRepository.findByUsername("VESTORIA")
+                    UserEntity botUser = userRepository.findByUsername("vestoria")
                             .orElseThrow(() -> new ResourceNotFoundException("vestoria user not found"));
 
                     // Record Transaction
@@ -129,16 +166,24 @@ public class BotService {
                             .build();
                     transactionRepository.save(transaction);
 
-                    // Create Notification
-                    String notificationMessage = String.format("%s %s dükkanından %d adet %s satın alındı. Kazanç: %s",
-                            owner.getUsername(), shop.getSubType(), quantityToBuy, item.getName(), totalEarnings,
-                            finalScore);
-                    notificationService.createNotification(owner, notificationMessage);
+                    // Add to summary
+                    salesSummary.append(String.format("%d adet %s (%s), ", quantityToBuy, item.getName(), finalScore));
                 } else {
                     // Just save the score if we didn't buy anything
                     itemRepository.save(item);
                 }
             }
+        }
+
+        // Send summary notification if any sales occurred
+        if (totalBatchEarnings.compareTo(BigDecimal.ZERO) > 0) {
+            String summary = salesSummary.toString();
+            if (summary.endsWith(", ")) {
+                summary = summary.substring(0, summary.length() - 2);
+            }
+            String notificationMessage = String.format("%s dükkanında satış yapıldı: %s. Toplam Kazanç: %s",
+                    shop.getSubType(), summary, totalBatchEarnings);
+            notificationService.createNotification(shop.getOwner(), notificationMessage);
         }
 
         // Reset shop status

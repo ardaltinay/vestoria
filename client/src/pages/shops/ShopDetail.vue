@@ -213,7 +213,8 @@
                   <BuildingInventoryTable 
                     :items="shop.items" 
                     :editing-item="editingItem"
-                    :new-price="newPrice"
+                    v-model:new-price="newPrice"
+                    :show-price="true"
                     @start-edit-price="startEditPrice"
                     @save-price="savePrice"
                     @cancel-edit-price="cancelEditPrice"
@@ -529,6 +530,33 @@ const showCloseModal = ref(false)
 const editingItem = ref(null)
 const newPrice = ref(0)
 
+const startEditPrice = (item) => {
+  editingItem.value = item.id
+  newPrice.value = item.price || 0
+}
+
+const cancelEditPrice = () => {
+  editingItem.value = null
+  newPrice.value = 0
+}
+
+const savePrice = async (item) => {
+  if (newPrice.value < 0) {
+    addToast('Fiyat 0 dan küçük olamaz', 'error')
+    return
+  }
+  
+  try {
+    await BuildingService.updateItemPrice(shop.value.id, item.id, newPrice.value)
+    addToast('Fiyat güncellendi', 'success')
+    editingItem.value = null
+    await shopsStore.load()
+  } catch (error) {
+    console.error(error)
+    addToast(error.response?.data?.message || 'Fiyat güncellenemedi', 'error')
+  }
+}
+
 const updateTimer = async () => {
   if (!shop.value?.salesEndsAt) {
     timeLeft.value = ''
@@ -564,22 +592,38 @@ const updateTimer = async () => {
       } catch (error) {
         console.warn('Auto-complete failed (likely done by server):', error)
         // Check if status updated
-        await shopsStore.load()
-        if (!shop.value?.isSelling) {
-            addToast('Satış tamamlandı!', 'success')
-            await authStore.fetchUser()
-            return
-        }
-
-        // Fallback to polling
-        const pollInterval = setInterval(async () => {
+        try {
           await shopsStore.load()
           if (!shop.value?.isSelling) {
-            clearInterval(pollInterval)
-            addToast('Satış tamamlandı!', 'success')
-            await authStore.fetchUser()
+              addToast('Satış tamamlandı!', 'success')
+              await authStore.fetchUser()
+              return
           }
-        }, 2000)
+
+          // Fallback to polling with limit
+          let attempts = 0
+          const maxAttempts = 5
+          const pollInterval = setInterval(async () => {
+            attempts++
+            if (attempts > maxAttempts) {
+               clearInterval(pollInterval)
+               return
+            }
+            try {
+              await shopsStore.load()
+              if (!shop.value?.isSelling) {
+                clearInterval(pollInterval)
+                addToast('Satış tamamlandı!', 'success')
+                await authStore.fetchUser()
+              }
+            } catch (e) {
+               console.error('Polling failed:', e)
+               clearInterval(pollInterval)
+            }
+          }, 2000)
+        } catch (loadError) {
+           console.error('Failed to reload shop status:', loadError)
+        }
       }
     }, 2000)
     
@@ -634,33 +678,7 @@ const confirmStartSales = async () => {
   }
 }
 
-const startEditPrice = (item) => {
-  editingItem.value = item.id
-  newPrice.value = item.price
-}
 
-
-
-const savePrice = async (item) => {
-  try {
-    // We need an endpoint to update item price. 
-    // Assuming InventoryService has updateItem or similar.
-    // If not, we might need to create one.
-    // For now, let's assume we can update it via a new method we'll add to InventoryService/Controller
-    await InventoryService.updateItemPrice(item.id, newPrice.value)
-    
-    item.price = newPrice.value
-    editingItem.value = null
-    addToast('Fiyat güncellendi', 'success')
-  } catch (error) {
-    console.error(error)
-    addToast('Fiyat güncellenemedi', 'error')
-  }
-}
-
-const cancelEditPrice = () => {
-  editingItem.value = null
-}
 
 const handleUpgrade = async () => {
   if (shop.value.level >= 3) {

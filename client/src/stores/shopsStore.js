@@ -11,6 +11,7 @@ export const useShopsStore = defineStore('shops', {
         this.items = response.data.filter(b => b.type === 'SHOP')
       } catch (error) {
         console.error('Failed to load shops:', error)
+        throw error
       }
     },
     async getById(id) {

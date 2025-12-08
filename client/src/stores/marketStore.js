@@ -13,6 +13,12 @@ export const useMarketStore = defineStore('market', () => {
   const isConnected = ref(false)
   let stompClient = null
 
+  /* Pagination State */
+  const currentPage = ref(0)
+  const totalPages = ref(0)
+  const searchQuery = ref('')
+  const pageSize = 50
+
   const connect = () => {
     if (isConnected.value) return
 
@@ -53,17 +59,28 @@ export const useMarketStore = defineStore('market', () => {
 
   const handleMarketUpdate = (update) => {
     if (update.type === 'LIST') {
-      // Add new listing to the top
-      listings.value.unshift({
-        id: update.id,
-        item: { name: update.itemName },
-        quantity: update.quantity,
-        price: update.price,
-        seller: { username: update.sellerName },
-        isActive: true
-      })
+      // Only add new listing if we are on the first page and NOT searching
+      // This preserves the context for other pages
+      if (currentPage.value === 0 && !searchQuery.value) {
+        listings.value.unshift({
+          id: update.id,
+          item: { name: update.itemName },
+          quantity: update.quantity,
+          price: update.price,
+          seller: { username: update.sellerName },
+          isActive: true,
+          qualityScore: update.qualityScore,
+          itemUnit: update.itemUnit || 'PIECE'
+        })
+
+        // Optional: Remove the last item if we exceeded page size to allow strict pagination
+        // But for "feed" style, letting it grow slightly is often better UX until refresh
+        if (listings.value.length > pageSize) {
+          listings.value.pop()
+        }
+      }
     } else if (update.type === 'BUY') {
-      // Update existing listing
+      // Update existing listing wherever it is in the current view
       const listing = listings.value.find(l => l.id === update.id)
       if (listing) {
         listing.quantity -= update.quantity
@@ -75,29 +92,32 @@ export const useMarketStore = defineStore('market', () => {
 
       // Check if current user is the seller
       const authStore = useAuthStore()
-      if (authStore.user?.username === update.sellerName) {
+      if (update.sellerName && authStore.user?.username === update.sellerName) {
         SoundService.play('coins')
         const { addFloatingText } = useFloatingText()
-        // Add floating text at random position near center or top right
         addFloatingText(`+${formatCurrency(update.totalPrice)}`, window.innerWidth / 2, window.innerHeight / 2, { color: '#10b981' })
 
         // Also refresh user balance
         authStore.fetchUser()
       }
+    } else if (update.type === 'CANCEL') {
+      // Remove listing
+      listings.value = listings.value.filter(l => l.id !== update.id)
     }
   }
 
   const loadListings = async (page = 0, search = '') => {
     try {
+      // Update store state
+      currentPage.value = page
+      searchQuery.value = search
+
       const response = await MarketService.getActiveListings({ page, search })
 
       // If it's the first page or a search, replace the listings
-      if (page === 0) {
-        listings.value = response.data.content
-      } else {
-        // Otherwise append for pagination
-        listings.value.push(...response.data.content)
-      }
+      listings.value = response.data.content
+      totalPages.value = response.data.totalPages
+
       return response.data
     } catch (error) {
       console.error('Failed to load listings', error)
@@ -108,6 +128,9 @@ export const useMarketStore = defineStore('market', () => {
   return {
     listings,
     isConnected,
+    currentPage,
+    totalPages,
+    searchQuery,
     connect,
     disconnect,
     loadListings

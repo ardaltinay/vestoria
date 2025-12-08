@@ -9,6 +9,10 @@ import io.vestoria.dto.response.BuildingProductionTypeDto;
 import io.vestoria.enums.BuildingSubType;
 import io.vestoria.service.BotService;
 import io.vestoria.service.BuildingService;
+import java.security.Principal;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,11 +23,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.security.Principal;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/build")
@@ -54,7 +53,7 @@ public class BuildingController {
 
     @PostMapping("/production/{buildingId}")
     public ResponseEntity<?> setProduction(@PathVariable UUID buildingId, @RequestBody SetProductionRequestDto request,
-                                           Principal principal) {
+            Principal principal) {
         return ResponseEntity.ok(buildingConverter.toResponseDto(
                 buildingService.setProduction(buildingId, principal.getName(), request.getProductionType())));
     }
@@ -69,7 +68,7 @@ public class BuildingController {
 
     @PostMapping("/{buildingId}/start-production")
     public ResponseEntity<?> startProduction(@PathVariable UUID buildingId,
-                                             @RequestBody StartProductionRequestDto request, Principal principal) {
+            @RequestBody StartProductionRequestDto request, Principal principal) {
         buildingService.startProduction(buildingId, principal.getName(), request.getProductId());
         return ResponseEntity.ok().build();
     }
@@ -117,9 +116,16 @@ public class BuildingController {
         return ResponseEntity.ok("Satış tamamlandı!");
     }
 
+    @PutMapping("/{buildingId}/items/{itemId}/price")
+    public ResponseEntity<?> updatePrice(@PathVariable UUID buildingId, @PathVariable UUID itemId,
+            @RequestBody java.math.BigDecimal price, Principal principal) {
+        buildingService.updateItemPrice(buildingId, itemId, principal.getName(), price);
+        return ResponseEntity.ok("Fiyat güncellendi!");
+    }
+
     @PostMapping("/{buildingId}/withdraw")
     public ResponseEntity<?> withdraw(@PathVariable UUID buildingId, @RequestBody WithdrawRequestDto request,
-                                      Principal principal) {
+            Principal principal) {
         buildingService.withdrawFromBuilding(buildingId, principal.getName(), request.getProductId(),
                 request.getQuantity());
         return ResponseEntity.ok("Ürünler envantere aktarıldı!");
