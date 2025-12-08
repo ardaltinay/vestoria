@@ -1,5 +1,6 @@
 package io.vestoria.config;
 
+import io.vestoria.constant.Constants;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.MarketEntity;
@@ -63,41 +64,44 @@ public class MarketInitializer {
     private void seedItems(BuildingEntity warehouse, UserEntity botUser) {
         List<SeedItem> items = Arrays.asList(
                 // Market Items (Food)
-                new SeedItem("Ekmek", ItemUnit.PIECE, 5.0, ItemTier.LOW),
-                new SeedItem("Su", ItemUnit.LITER, 2.0, ItemTier.LOW),
-                new SeedItem("Peynir", ItemUnit.KG, 50.0, ItemTier.MEDIUM),
+                new SeedItem("Ekmek", ItemUnit.PIECE, ItemTier.LOW),
+                new SeedItem("Su", ItemUnit.LITER, ItemTier.LOW),
+                new SeedItem("Peynir", ItemUnit.KG, ItemTier.MEDIUM),
 
                 // Greengrocer Items (Fresh Produce)
-                new SeedItem("Domates", ItemUnit.KG, 10.0, ItemTier.LOW),
-                new SeedItem("Elma", ItemUnit.KG, 15.0, ItemTier.LOW),
-                new SeedItem("Patates", ItemUnit.KG, 8.0, ItemTier.LOW),
+                new SeedItem("Domates", ItemUnit.KG, ItemTier.LOW),
+                new SeedItem("Elma", ItemUnit.KG, ItemTier.LOW),
+                new SeedItem("Patates", ItemUnit.KG, ItemTier.LOW),
 
                 // Clothing Items
-                new SeedItem("Kumaş", ItemUnit.PIECE, 25.0, ItemTier.LOW),
-                new SeedItem("Ayakkabı  ", ItemUnit.PIECE, 150.0, ItemTier.HIGH),
-                new SeedItem("Ceket", ItemUnit.PIECE, 200.0, ItemTier.HIGH),
+                new SeedItem("Kumaş", ItemUnit.PIECE, ItemTier.LOW),
+                new SeedItem("Ayakkabı", ItemUnit.PIECE, ItemTier.HIGH),
+                new SeedItem("Ceket", ItemUnit.PIECE, ItemTier.HIGH),
 
                 // Jewelry Items
-                new SeedItem("Altın Kolye", ItemUnit.PIECE, 800.0, ItemTier.SCARCE),
-                new SeedItem("Gümüş Yüzük", ItemUnit.PIECE, 250.0, ItemTier.SCARCE),
+                new SeedItem("Kolye", ItemUnit.PIECE, ItemTier.SCARCE),
+                new SeedItem("Yüzük", ItemUnit.PIECE, ItemTier.SCARCE),
 
                 // Industrial / Raw Materials
-                new SeedItem("Demir", ItemUnit.KG, 50.0, ItemTier.MEDIUM),
-                new SeedItem("Çelik", ItemUnit.KG, 120.0, ItemTier.MEDIUM));
+                new SeedItem("Demir", ItemUnit.KG, ItemTier.MEDIUM),
+                new SeedItem("Çelik", ItemUnit.KG, ItemTier.MEDIUM));
 
         for (SeedItem seed : items) {
+            // Get Base Price and apply 25% markup (Ceiling Price Strategy)
+            BigDecimal basePrice = Constants.BASE_PRICES.getOrDefault(seed.name,
+                    BigDecimal.valueOf(10));
+            BigDecimal ceilingPrice = basePrice.multiply(BigDecimal.valueOf(1.25));
+
             // Create Item in Warehouse
-            ItemEntity item = ItemEntity.builder().name(seed.name).unit(seed.unit).price(BigDecimal.valueOf(seed.price))
+            ItemEntity item = ItemEntity.builder().name(seed.name).unit(seed.unit).price(ceilingPrice)
                     .quantity(10000) // Huge stock
                     .qualityScore(BigDecimal.valueOf(50.0)).tier(seed.tier).building(warehouse).owner(botUser).build();
-            @SuppressWarnings({"null", "unused"})
-            ItemEntity savedItem = itemRepository.save(item);
+            itemRepository.save(item);
 
             // Create Market Listing
             MarketEntity listing = MarketEntity.builder().seller(botUser).item(item)
-                    .price(BigDecimal.valueOf(seed.price)).quantity(item.getQuantity()).isActive(true).build();
-            @SuppressWarnings({"null", "unused"})
-            MarketEntity savedListing = marketRepository.save(listing);
+                    .price(ceilingPrice).quantity(item.getQuantity()).isActive(true).build();
+            marketRepository.save(listing);
         }
     }
 
@@ -105,7 +109,6 @@ public class MarketInitializer {
     private static class SeedItem {
         String name;
         ItemUnit unit;
-        double price;
         ItemTier tier;
     }
 }

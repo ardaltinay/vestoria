@@ -139,6 +139,7 @@ const filters = [
   { label: 'Üretimde', value: 'PRODUCING' },
   { label: 'Satışta', value: 'SELLING' },
   { label: 'Beklemede', value: 'IDLE' },
+  { label: 'Tamamlandı', value: 'COMPLETED' },
 ]
 
 // Timer for updating progress
@@ -187,6 +188,7 @@ const filteredItems = computed(() => {
   if (activeFilter.value === 'PRODUCING') return allItems.value.filter(i => i.status === 'PRODUCING')
   if (activeFilter.value === 'SELLING') return allItems.value.filter(i => i.status === 'SELLING')
   if (activeFilter.value === 'IDLE') return allItems.value.filter(i => i.status === 'IDLE')
+  if (activeFilter.value === 'COMPLETED') return allItems.value.filter(i => i.status === 'COMPLETED')
   return allItems.value
 })
 

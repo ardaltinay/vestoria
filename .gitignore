@@ -47,3 +47,7 @@ server/uploads/**
 
 # Misc
 Thumbs.db
+
+# Antigravity / Gemini
+.gemini/
+.antigravity/

@@ -34,6 +34,7 @@ public class BotService {
     private final NotificationService notificationService;
     private final UserService userService;
     private final MarketService marketService;
+    private final EconomicService economicService;
 
     // @Scheduled(fixedRate = 60000) // Every minute - DISABLED as per user request
     @Transactional
@@ -95,31 +96,25 @@ public class BotService {
                 // Price Factor Calculation
                 BigDecimal salesPrice = item.getPrice(); // User set price
 
-                // Get Base Price for Reference
-                BigDecimal basePrice = Constants.BASE_PRICES.get(item.getName());
-                if (basePrice == null) {
-                    basePrice = BigDecimal.valueOf(10); // Default fallback
-                }
+                // Get Dynamic Market Price for Reference
+                BigDecimal marketPrice = economicService.getMarketPrice(item.getName());
 
                 double priceMultiplier = 1.0;
-                if (basePrice.compareTo(BigDecimal.ZERO) > 0) {
-                    double ratio = salesPrice.doubleValue() / basePrice.doubleValue();
+                if (marketPrice.compareTo(BigDecimal.ZERO) > 0) {
+                    // Compare user price against Real Time Market Price
+                    double ratio = salesPrice.doubleValue() / marketPrice.doubleValue();
                     if (ratio <= 1.0) {
-                        // Cheaper than market base: Boost sales
-                        priceMultiplier = 1.0 + (1.0 - ratio) * 2;
+                        // Cheaper than market average: Boost sales significantly
+                        priceMultiplier = 1.0 + (1.0 - ratio) * 3; // Aggressive boost if cheap
                     } else {
-                        // More expensive: Reduce sales
+                        // More expensive: Reduce sales slightly
+                        // Logic: Users might still buy if convenient, but less likely
                         priceMultiplier = 1.0 / (ratio * ratio);
                     }
                 }
                 buyPercentage = buyPercentage * priceMultiplier;
 
                 int quantityToBuy = (int) Math.ceil(item.getQuantity() * buyPercentage);
-
-                // Log debug info
-                System.out.println("Processing item: " + item.getName());
-                System.out.println("Demand: " + globalDemand + ", Supply: " + globalSupply);
-                System.out.println("Buy %: " + buyPercentage + ", Qty to buy: " + quantityToBuy);
 
                 if (quantityToBuy == 0 && buyPercentage > 0.01) {
                     quantityToBuy = 1;
@@ -167,7 +162,7 @@ public class BotService {
                     transactionRepository.save(transaction);
 
                     // Add to summary
-                    salesSummary.append(String.format("%d adet %s (%s), ", quantityToBuy, item.getName(), finalScore));
+                    salesSummary.append(String.format("%d adet %s, ", quantityToBuy, item.getName(), finalScore));
                 } else {
                     // Just save the score if we didn't buy anything
                     itemRepository.save(item);
@@ -182,7 +177,7 @@ public class BotService {
                 summary = summary.substring(0, summary.length() - 2);
             }
             String notificationMessage = String.format("%s dükkanında satış yapıldı: %s. Toplam Kazanç: %s",
-                    shop.getSubType(), summary, totalBatchEarnings);
+                    shop.getName(), summary, totalBatchEarnings);
             notificationService.createNotification(shop.getOwner(), notificationMessage);
         }
 

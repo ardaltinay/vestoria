@@ -315,7 +315,12 @@
                 
                 <!-- Price -->
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-1">Birim Fiyat (VP)</label>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="block text-sm font-medium text-slate-700">Birim Fiyat (VP)</label>
+                    <span v-if="estimatedPrice" class="text-xs text-primary-600 font-medium">
+                      Piyasa: {{ formatCurrency(estimatedPrice) }}
+                    </span>
+                  </div>
                   <input 
                     v-model.number="listingForm.price"
                     type="number" 
@@ -569,6 +574,22 @@ const confirmCancel = async () => {
 watch(showSellModal, (newValue) => {
   if (newValue) {
     fetchInventory()
+  }
+})
+
+watch(selectedItem, async (newItem) => {
+  if (newItem) {
+    listingForm.value.price = 10 // Reset
+    estimatedPrice.value = null
+    try {
+      const response = await MarketService.getPriceEstimate(newItem.name)
+      if (response.data) {
+        listingForm.value.price = response.data
+        estimatedPrice.value = response.data
+      }
+    } catch (error) {
+      console.error('Price estimate failed', error)
+    }
   }
 })
 

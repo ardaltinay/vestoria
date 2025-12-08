@@ -50,6 +50,11 @@ public class MarketService {
     private final NotificationService notificationService;
     private final MarketConverter marketConverter;
     private final SimpMessagingTemplate messagingTemplate;
+    private final EconomicService economicService;
+
+    public BigDecimal getEstimatedMarketPrice(String itemName) {
+        return economicService.getMarketPrice(itemName);
+    }
 
     @Transactional
     @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
@@ -232,8 +237,13 @@ public class MarketService {
                 transactionRepository.save(transaction);
 
                 // Create Notification for Seller
-                String notificationMessage = String.format("%s kullanıcısı %d adet %s satın aldı. Kazanç: %s",
-                        buyer.getUsername(), quantity, marketItem.getItem().getName(), totalCost);
+                String sourceInfo = "";
+                if (marketItem.getItem().getBuilding() != null) {
+                    sourceInfo = String.format(" (%s işletmesinden)", marketItem.getItem().getBuilding().getName());
+                }
+
+                String notificationMessage = String.format("%s kullanıcısı%s %d adet %s satın aldı. Kazanç: %s",
+                        buyer.getUsername(), sourceInfo, quantity, marketItem.getItem().getName(), totalCost);
                 notificationService.createNotification(seller, notificationMessage);
 
                 break; // Success, exit loop

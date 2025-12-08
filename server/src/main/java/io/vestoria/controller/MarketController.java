@@ -6,6 +6,7 @@ import io.vestoria.dto.request.ListItemRequestDto;
 import io.vestoria.dto.response.MarketResponseDto;
 import io.vestoria.dto.response.MarketTrendDto;
 import io.vestoria.service.MarketService;
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +40,11 @@ public class MarketController {
     @GetMapping("/trends")
     public ResponseEntity<List<MarketTrendDto>> getMarketTrends() {
         return ResponseEntity.ok(marketService.getMarketTrends());
+    }
+
+    @GetMapping("/price-estimate")
+    public ResponseEntity<BigDecimal> getPriceEstimate(@RequestParam String itemName) {
+        return ResponseEntity.ok(marketService.getEstimatedMarketPrice(itemName));
     }
 
     @PostMapping("/list/{itemId}")

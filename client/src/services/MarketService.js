@@ -15,5 +15,8 @@ export default {
   },
   getMarketTrends() {
     return api.get('/market/trends');
+  },
+  getPriceEstimate(itemName) {
+    return api.get('/market/price-estimate', { params: { itemName } });
   }
 };
