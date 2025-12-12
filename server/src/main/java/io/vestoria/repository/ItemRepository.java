@@ -2,6 +2,7 @@ package io.vestoria.repository;
 
 import io.vestoria.dto.ItemAggregateDto;
 import io.vestoria.entity.ItemEntity;
+import io.vestoria.entity.UserEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +24,8 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
     List<ItemEntity> findAllByOwner_Username(String username);
 
     List<ItemEntity> findAllByOwner_UsernameAndBuildingIsNull(String username);
+
+    Optional<ItemEntity> findByOwnerAndBuildingIsNullAndName(UserEntity owner, String name);
 
     long countByBuilding_Id(UUID buildingId);
 

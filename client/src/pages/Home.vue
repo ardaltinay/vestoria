@@ -196,7 +196,8 @@
         <div class="flex items-center gap-4">
           <button 
             @click="isSidebarOpen = true"
-            class="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg"
+            class="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg touch-target active:bg-slate-200"
+            type="button"
           >
             <Bars3Icon class="w-6 h-6" />
           </button>

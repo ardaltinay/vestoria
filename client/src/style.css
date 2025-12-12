@@ -12,8 +12,23 @@
 }
 
 @layer base {
+  html {
+    /* Prevent pull-to-refresh on iOS/Android */
+    overscroll-behavior-y: none;
+    /* Ensure touch events work */
+    touch-action: manipulation;
+  }
+
   body {
     @apply font-sans text-slate-700 bg-slate-50 antialiased;
+    /* Prevent text selection highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    /* Prevent overscroll bounce */
+    overscroll-behavior: none;
+    /* Full height for mobile */
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1,

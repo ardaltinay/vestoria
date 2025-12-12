@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Web uses relative /api URL (handled by Vite proxy in dev, or same-origin in prod)
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true,

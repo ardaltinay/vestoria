@@ -57,7 +57,7 @@ public class MarketService {
     }
 
     @Transactional
-    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
     public MarketEntity listItem(UUID userId, UUID itemId, ListItemRequestDto request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -139,7 +139,7 @@ public class MarketService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
     public void buyItem(UserEntity buyer, UUID marketItemId, BuyItemRequestDto request) {
         int maxRetries = 3;
         int attempt = 0;
@@ -197,8 +197,8 @@ public class MarketService {
 
                 // Add item to buyer's centralized inventory (building = null)
                 // Check if buyer already has this item in centralized inventory
-                Optional<ItemEntity> existingItemOpt = itemRepository.findByBuildingIdAndName(null,
-                        marketItem.getItem().getName());
+                Optional<ItemEntity> existingItemOpt = itemRepository.findByOwnerAndBuildingIsNullAndName(
+                        buyer, marketItem.getItem().getName());
 
                 if (existingItemOpt.isPresent()) {
                     ItemEntity existingItem = existingItemOpt.get();
@@ -260,7 +260,7 @@ public class MarketService {
     }
 
     @Transactional
-    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
+    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
     public void cancelListing(String username, UUID listingId) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
