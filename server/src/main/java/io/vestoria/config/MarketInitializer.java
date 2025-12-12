@@ -64,13 +64,11 @@ public class MarketInitializer {
     private void seedItems(BuildingEntity warehouse, UserEntity botUser) {
         List<SeedItem> items = Arrays.asList(
                 // Market Items (Food)
-                new SeedItem("Ekmek", ItemUnit.PIECE, ItemTier.LOW),
-                new SeedItem("Su", ItemUnit.LITER, ItemTier.LOW),
+                new SeedItem("Ekmek", ItemUnit.PIECE, ItemTier.LOW), new SeedItem("Su", ItemUnit.LITER, ItemTier.LOW),
                 new SeedItem("Peynir", ItemUnit.KG, ItemTier.MEDIUM),
 
                 // Greengrocer Items (Fresh Produce)
-                new SeedItem("Domates", ItemUnit.KG, ItemTier.LOW),
-                new SeedItem("Elma", ItemUnit.KG, ItemTier.LOW),
+                new SeedItem("Domates", ItemUnit.KG, ItemTier.LOW), new SeedItem("Elma", ItemUnit.KG, ItemTier.LOW),
                 new SeedItem("Patates", ItemUnit.KG, ItemTier.LOW),
 
                 // Clothing Items
@@ -88,19 +86,18 @@ public class MarketInitializer {
 
         for (SeedItem seed : items) {
             // Get Base Price and apply 25% markup (Ceiling Price Strategy)
-            BigDecimal basePrice = Constants.BASE_PRICES.getOrDefault(seed.name,
-                    BigDecimal.valueOf(10));
+            BigDecimal basePrice = Constants.BASE_PRICES.getOrDefault(seed.name, BigDecimal.valueOf(10));
             BigDecimal ceilingPrice = basePrice.multiply(BigDecimal.valueOf(1.25));
 
             // Create Item in Warehouse
-            ItemEntity item = ItemEntity.builder().name(seed.name).unit(seed.unit).price(ceilingPrice)
-                    .quantity(10000) // Huge stock
+            ItemEntity item = ItemEntity.builder().name(seed.name).unit(seed.unit).price(ceilingPrice).quantity(10000) // Huge
+                                                                                                                       // stock
                     .qualityScore(BigDecimal.valueOf(50.0)).tier(seed.tier).building(warehouse).owner(botUser).build();
             itemRepository.save(item);
 
             // Create Market Listing
-            MarketEntity listing = MarketEntity.builder().seller(botUser).item(item)
-                    .price(ceilingPrice).quantity(item.getQuantity()).isActive(true).build();
+            MarketEntity listing = MarketEntity.builder().seller(botUser).item(item).price(ceilingPrice)
+                    .quantity(item.getQuantity()).isActive(true).build();
             marketRepository.save(listing);
         }
     }

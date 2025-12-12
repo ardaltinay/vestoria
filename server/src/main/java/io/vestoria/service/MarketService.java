@@ -57,7 +57,7 @@ public class MarketService {
     }
 
     @Transactional
-    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
+    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
     public MarketEntity listItem(UUID userId, UUID itemId, ListItemRequestDto request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -139,7 +139,7 @@ public class MarketService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
+    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
     public void buyItem(UserEntity buyer, UUID marketItemId, BuyItemRequestDto request) {
         int maxRetries = 3;
         int attempt = 0;
@@ -260,7 +260,7 @@ public class MarketService {
     }
 
     @Transactional
-    @CacheEvict(value = { "globalDemand", "globalSupply", "activeListings" }, allEntries = true)
+    @CacheEvict(value = {"globalDemand", "globalSupply", "activeListings"}, allEntries = true)
     public void cancelListing(String username, UUID listingId) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
@@ -286,12 +286,9 @@ public class MarketService {
         marketRepository.save(listing);
 
         // Publish WebSocket Event
-        messagingTemplate.convertAndSend("/topic/market",
-                MarketUpdateDto.builder()
-                        .type("CANCEL")
-                        .id(listing.getId())
-                        // Other fields can be null for CANCEL
-                        .build());
+        messagingTemplate.convertAndSend("/topic/market", MarketUpdateDto.builder().type("CANCEL").id(listing.getId())
+                // Other fields can be null for CANCEL
+                .build());
     }
 
     // @Cacheable("activeListings") - Disabled due to Redis serialization issues

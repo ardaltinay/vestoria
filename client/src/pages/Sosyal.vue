@@ -86,7 +86,11 @@
               <p class="text-slate-500 text-xs sm:text-sm">Şimdilik her şey sakin görünüyor.</p>
             </div>
 
-            <div v-for="news in announcements" :key="news.id" class="p-4 sm:p-6 hover:bg-slate-50 transition-colors group">
+            <div 
+              v-for="news in announcements" 
+              :key="news.id" 
+              class="p-4 sm:p-6 hover:bg-slate-50 transition-colors group relative"
+            >
               <div class="flex items-start gap-3 sm:gap-4">
                 <!-- Type Badge -->
                 <div 
@@ -102,14 +106,17 @@
                 
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1 sm:gap-0">
-                    <h3 class="font-bold text-slate-900 text-base sm:text-lg group-hover:text-blue-600 transition-colors">
+                    <h3 class="font-bold text-slate-900 text-base sm:text-lg group-hover:text-blue-600 transition-colors truncate">
                       {{ news.title }}
                     </h3>
                     <span class="text-xs text-slate-400 whitespace-nowrap sm:ml-4">
-                      {{ formatDate(news.createdAt) }}
+                      {{ formatDate(news.createdTime) }}
                     </span>
                   </div>
-                  <p class="text-slate-600 leading-relaxed text-xs sm:text-sm whitespace-pre-line">
+                  <p 
+                    class="text-slate-600 leading-relaxed text-xs sm:text-sm line-clamp-2 group-hover:line-clamp-none transition-all"
+                    :title="news.content"
+                  >
                     {{ news.content }}
                   </p>
                 </div>

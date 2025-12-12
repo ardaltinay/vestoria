@@ -1,6 +1,5 @@
 package io.vestoria.service;
 
-import io.vestoria.constant.Constants;
 import io.vestoria.entity.BuildingEntity;
 import io.vestoria.entity.ItemEntity;
 import io.vestoria.entity.TransactionEntity;
@@ -47,7 +46,7 @@ public class BotService {
     }
 
     @Transactional
-    @CacheEvict(value = { "globalSupply", "globalDemand", "getUserBuildings" }, allEntries = true)
+    @CacheEvict(value = {"globalSupply", "globalDemand", "getUserBuildings"}, allEntries = true)
     public void processShopSales(UUID buildingId) {
         BuildingEntity shop = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dükkan bulunamadı"));

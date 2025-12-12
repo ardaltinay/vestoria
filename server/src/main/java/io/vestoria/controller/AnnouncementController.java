@@ -1,7 +1,7 @@
 package io.vestoria.controller;
 
 import io.vestoria.dto.request.CreateAnnouncementRequestDto;
-import io.vestoria.entity.AnnouncementEntity;
+import io.vestoria.dto.response.AnnouncementDto;
 import io.vestoria.entity.UserEntity;
 import io.vestoria.exception.ResourceNotFoundException;
 import io.vestoria.repository.UserRepository;
@@ -28,7 +28,7 @@ public class AnnouncementController {
     private final UserRepository userRepository;
 
     @GetMapping
-    public ResponseEntity<List<AnnouncementEntity>> getAnnouncements() {
+    public ResponseEntity<List<AnnouncementDto>> getAnnouncements() {
         return ResponseEntity.ok(announcementService.getActiveAnnouncements());
     }
 

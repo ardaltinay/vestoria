@@ -284,7 +284,7 @@
       </header>
 
       <!-- Main Content Area -->
-      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth">
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 scroll-smooth pb-mobile-nav">
         <div class="max-w-7xl mx-auto">
           <RouterView v-slot="{ Component }">
             <transition name="fade" mode="out-in">
@@ -293,6 +293,9 @@
           </RouterView>
         </div>
       </main>
+
+      <!-- Mobile Bottom Navigation -->
+      <MobileNavigation />
     </div>
   </div>
 </template>
@@ -319,6 +322,7 @@ import {
   UserIcon
 } from '@heroicons/vue/24/outline'
 import Logo from '../components/Logo.vue'
+import MobileNavigation from '../components/MobileNavigation.vue'
 import CurrencyIcon from '../components/CurrencyIcon.vue'
 import AuthService from '../services/AuthService'
 import { useAuthStore } from '../stores/authStore'

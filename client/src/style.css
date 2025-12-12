@@ -51,3 +51,47 @@
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Mobile-specific utilities */
+@layer utilities {
+
+  /* Safe area support for notched devices */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Bottom navigation spacing */
+  .pb-mobile-nav {
+    padding-bottom: 5rem;
+    /* 80px for bottom nav */
+  }
+
+  @media (min-width: 1024px) {
+    .pb-mobile-nav {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Touch-friendly minimum sizes */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile card grid for tables */
+@layer components {
+  .mobile-card-grid {
+    @apply grid grid-cols-1 gap-3;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-card-grid {
+      @apply grid-cols-2;
+    }
+  }
+}

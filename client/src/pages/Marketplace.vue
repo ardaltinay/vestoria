@@ -42,74 +42,132 @@
     </div>
 
     <!-- Content -->
-    <div v-else class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-              <th class="px-3 sm:px-6 py-3 sm:py-4">Ürün</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4">Satıcı</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4">Miktar</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4">Kalite</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4">Fiyat</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4 text-right">İşlem</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr 
-              v-for="listing in listings" 
-              :key="listing.id"
-              class="hover:bg-slate-50 transition-colors group"
-            >
-              <td class="px-3 sm:px-6 py-3 sm:py-4">
-                <div class="flex items-center gap-3">
-                  <ProductIcon :name="listing.itemName.trim()" size="md" class="group-hover:scale-110 transition-transform" />
-                  <div>
-                    <div class="font-medium text-slate-900 text-sm sm:text-base">{{ listing.itemName }}</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 text-slate-600 text-xs sm:text-sm">{{ listing.sellerUsername }}</td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4">
-                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+    <div v-else>
+      <!-- Mobile Card Layout -->
+      <div class="md:hidden space-y-3">
+        <div 
+          v-for="listing in listings" 
+          :key="'mobile-' + listing.id"
+          class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
+        >
+          <div class="flex items-start gap-3">
+            <ProductIcon :name="listing.itemName.trim()" size="md" class="flex-shrink-0" />
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-slate-900 truncate">{{ listing.itemName }}</div>
+              <div class="text-xs text-slate-500 mt-0.5">Satıcı: {{ listing.sellerUsername }}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-emerald-600 flex items-center justify-end gap-1">
+                <CurrencyIcon class="w-4 h-4" />
+                {{ formatCurrency(listing.price) }}
+              </div>
+              <div class="text-xs text-slate-400">/ birim</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-500">Miktar:</span>
+                <span class="text-xs font-medium bg-slate-100 px-2 py-0.5 rounded">
                   {{ listing.sellerUsername.toLowerCase() === 'vestoria' ? '∞' : listing.quantity }}
                 </span>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4">
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-500">Kalite:</span>
                 <StarRating :score="listing.qualityScore" size="xs" />
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 font-bold text-emerald-600 text-xs sm:text-sm">
-                <div class="flex items-center gap-1">
-                  <CurrencyIcon class="w-3 h-3 sm:w-4 sm:h-4" />
-                  {{ formatCurrency(listing.price) }}
-                </div>
-              </td>
-              <td class="px-3 sm:px-6 py-3 sm:py-4 text-right">
-                <button 
-                  v-if="listing.sellerUsername !== currentUser?.username"
-                  @click="openBuyModal(listing)"
-                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-primary-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md active:scale-95"
-                  title="Satın Al"
-                >
-                  <ShoppingCartIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
-                  <span class="hidden sm:inline">Satın Al</span>
-                  <span class="sm:hidden">Al</span>
-                </button>
-                <button 
-                  v-else
-                  @click="handleCancelListing(listing)"
-                  :disabled="isCancelling"
-                  class="inline-flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 bg-red-100 text-red-700 text-xs sm:text-sm font-medium rounded-lg hover:bg-red-200 transition-colors shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
-                  title="İlanı Kaldır"
-                >
-                  <XMarkIcon class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
-                  <span class="hidden sm:inline">Kaldır</span>
-                  <span class="sm:hidden">Sil</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+            
+            <button 
+              v-if="listing.sellerUsername !== currentUser?.username"
+              @click="openBuyModal(listing)"
+              class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors touch-target"
+            >
+              <ShoppingCartIcon class="w-4 h-4 mr-1.5" />
+              Satın Al
+            </button>
+            <button 
+              v-else
+              @click="handleCancelListing(listing)"
+              :disabled="isCancelling"
+              class="inline-flex items-center justify-center px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 transition-colors touch-target disabled:opacity-50"
+            >
+              <XMarkIcon class="w-4 h-4 mr-1.5" />
+              Kaldır
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Table Layout -->
+      <div class="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                <th class="px-6 py-4">Ürün</th>
+                <th class="px-6 py-4">Satıcı</th>
+                <th class="px-6 py-4">Miktar</th>
+                <th class="px-6 py-4">Kalite</th>
+                <th class="px-6 py-4">Fiyat</th>
+                <th class="px-6 py-4 text-right">İşlem</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr 
+                v-for="listing in listings" 
+                :key="'desktop-' + listing.id"
+                class="hover:bg-slate-50 transition-colors group"
+              >
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <ProductIcon :name="listing.itemName.trim()" size="md" class="group-hover:scale-110 transition-transform" />
+                    <div>
+                      <div class="font-medium text-slate-900">{{ listing.itemName }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-slate-600 text-sm">{{ listing.sellerUsername }}</td>
+                <td class="px-6 py-4">
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                    {{ listing.sellerUsername.toLowerCase() === 'vestoria' ? '∞' : listing.quantity }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <StarRating :score="listing.qualityScore" size="xs" />
+                </td>
+                <td class="px-6 py-4 font-bold text-emerald-600 text-sm">
+                  <div class="flex items-center gap-1">
+                    <CurrencyIcon class="w-4 h-4" />
+                    {{ formatCurrency(listing.price) }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button 
+                    v-if="listing.sellerUsername !== currentUser?.username"
+                    @click="openBuyModal(listing)"
+                    class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm hover:shadow-md active:scale-95"
+                    title="Satın Al"
+                  >
+                    <ShoppingCartIcon class="w-4 h-4 mr-1.5" />
+                    Satın Al
+                  </button>
+                  <button 
+                    v-else
+                    @click="handleCancelListing(listing)"
+                    :disabled="isCancelling"
+                    class="inline-flex items-center justify-center px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 transition-colors shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+                    title="İlanı Kaldır"
+                  >
+                    <XMarkIcon class="w-4 h-4 mr-1.5" />
+                    Kaldır
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

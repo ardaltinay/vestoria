@@ -23,62 +23,105 @@
     </div>
 
     <!-- Content -->
-    <div v-else class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
-              <th class="px-6 py-3 whitespace-nowrap">Ürün</th>
-              <th class="px-6 py-3 text-center whitespace-nowrap">Miktar</th>
-              <th class="px-6 py-3 text-center whitespace-nowrap">Kalite</th>
-              <th class="px-6 py-3 text-center whitespace-nowrap">Maliyet</th>
-              <th class="px-6 py-3 text-right whitespace-nowrap">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200">
-            <tr 
-              v-for="item in items" 
-              :key="item.id"
-              class="hover:bg-slate-50 transition-colors"
-            >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center gap-3">
-                  <ProductIcon :name="item.name.trim()" size="md" class="flex-shrink-0" />
-                  <div>
-                    <h4 class="font-semibold text-slate-900">{{ item.name }}</h4>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+    <div v-else>
+      <!-- Mobile Card Layout -->
+      <div class="md:hidden space-y-3">
+        <div 
+          v-for="item in items" 
+          :key="'mobile-' + item.id"
+          class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm"
+        >
+          <div class="flex items-start gap-3">
+            <ProductIcon :name="item.name.trim()" size="md" class="flex-shrink-0" />
+            <div class="flex-1 min-w-0">
+              <h4 class="font-semibold text-slate-900 truncate">{{ item.name }}</h4>
+              <div class="flex items-center gap-3 mt-1">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                   {{ item.quantity }} {{ getItemUnitTr(item.unit) }}
                 </span>
-              </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap">
-                <div class="flex flex-col items-center gap-1">
-                  <StarRating :score="item.qualityScore || 0" size="xs" />
-                </div>
-              </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap">
-                <Currency :amount="item.cost || item.price || 0" :icon-size="16" class-name="justify-center" />
-              </td>
-              <td class="px-6 py-4 text-right whitespace-nowrap">
-                <button
-                  @click="openSellModal(item)"
-                  class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm mr-2"
-                >
-                  Pazara Koy
-                </button>
-                <button
-                  @click="openTransferModal(item)"
-                  class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
-                >
-                  Transfer
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <StarRating :score="item.qualityScore || 0" size="xs" />
+              </div>
+            </div>
+            <div class="text-right">
+              <Currency :amount="item.cost || item.price || 0" :icon-size="14" class-name="justify-end text-sm" />
+            </div>
+          </div>
+          
+          <div class="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+            <button
+              @click="openSellModal(item)"
+              class="flex-1 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm touch-target"
+            >
+              Pazara Koy
+            </button>
+            <button
+              @click="openTransferModal(item)"
+              class="flex-1 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm touch-target"
+            >
+              Transfer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Table Layout -->
+      <div class="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                <th class="px-6 py-3 whitespace-nowrap">Ürün</th>
+                <th class="px-6 py-3 text-center whitespace-nowrap">Miktar</th>
+                <th class="px-6 py-3 text-center whitespace-nowrap">Kalite</th>
+                <th class="px-6 py-3 text-center whitespace-nowrap">Maliyet</th>
+                <th class="px-6 py-3 text-right whitespace-nowrap">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr 
+                v-for="item in items" 
+                :key="'desktop-' + item.id"
+                class="hover:bg-slate-50 transition-colors"
+              >
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <ProductIcon :name="item.name.trim()" size="md" class="flex-shrink-0" />
+                    <div>
+                      <h4 class="font-semibold text-slate-900">{{ item.name }}</h4>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                    {{ item.quantity }} {{ getItemUnitTr(item.unit) }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <div class="flex flex-col items-center gap-1">
+                    <StarRating :score="item.qualityScore || 0" size="xs" />
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center whitespace-nowrap">
+                  <Currency :amount="item.cost || item.price || 0" :icon-size="16" class-name="justify-center" />
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap">
+                  <button
+                    @click="openSellModal(item)"
+                    class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm mr-2"
+                  >
+                    Pazara Koy
+                  </button>
+                  <button
+                    @click="openTransferModal(item)"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors text-sm"
+                  >
+                    Transfer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

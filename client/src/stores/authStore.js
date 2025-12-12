@@ -81,11 +81,14 @@ export const useAuthStore = defineStore('auth', {
         return user
       } catch (err) {
         console.error('Failed to fetch user:', err)
-        // If 401, token expired - logout
-        if (err.response?.status === 401) {
+        // If 401 and we don't have a user in store, logout
+        // But if we already have user data (just registered/logged in), keep it temporarily
+        // This handles race conditions where cookie might not be set yet
+        if (err.response?.status === 401 && !this.user) {
           this.logout()
         }
-        throw err
+        // Return existing user if available, otherwise null
+        return this.user || null
       }
     },
 

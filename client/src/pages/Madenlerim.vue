@@ -2,23 +2,23 @@
   <div class="min-h-screen bg-[#f8fafc] font-sans selection:bg-amber-100 selection:text-amber-900 pb-20">
     <!-- Header Section -->
     <div class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm bg-opacity-80 backdrop-blur-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
               Madenlerim
             </h1>
-            <p class="text-slate-500 font-medium mt-1">
+            <p class="text-sm sm:text-base text-slate-500 font-medium mt-1 hidden sm:block">
               Mevcut madenlerinizi yönetin ve kaynak çıkarımını kontrol edin.
             </p>
           </div>
           
           <button 
             @click="showWizard = true"
-            class="group flex items-center justify-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 active:scale-95"
+            class="w-full sm:w-auto group flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 active:scale-95 touch-target"
           >
-            <div class="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center group-hover:bg-amber-400 transition-colors">
-              <PlusIcon class="w-4 h-4 text-white" />
+            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-500 flex items-center justify-center group-hover:bg-amber-400 transition-colors">
+              <PlusIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
             </div>
             <span>Yeni Maden Aç</span>
           </button>
@@ -33,17 +33,17 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="mines.length === 0" class="bg-white rounded-3xl border border-dashed border-slate-300 p-16 text-center max-w-2xl mx-auto mt-10">
-        <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span class="text-4xl">⛏️</span>
+      <div v-else-if="mines.length === 0" class="bg-white rounded-2xl sm:rounded-3xl border border-dashed border-slate-300 p-8 sm:p-16 text-center max-w-2xl mx-auto mt-6 sm:mt-10">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+          <span class="text-2xl sm:text-4xl">⛏️</span>
         </div>
-        <h3 class="text-2xl font-black text-slate-800 mb-3">Henüz Madeniniz Yok</h3>
-        <p class="text-slate-500 text-lg mb-8 leading-relaxed">
-          Yeraltı zenginliklerine ulaşmak için ilk madenini aç. Madenler değerli kaynaklar sağlar.
+        <h3 class="text-xl sm:text-2xl font-black text-slate-800 mb-2 sm:mb-3">Henüz Madeniniz Yok</h3>
+        <p class="text-sm sm:text-lg text-slate-500 mb-6 sm:mb-8 leading-relaxed">
+          Yeraltı zenginliklerine ulaşmak için ilk madeninizi açın.
         </p>
         <button 
           @click="showWizard = true"
-          class="px-8 py-4 bg-amber-600 text-white rounded-2xl font-bold text-lg hover:bg-amber-700 transition-all shadow-xl shadow-amber-600/20 hover:-translate-y-1"
+          class="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-amber-600 text-white rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:bg-amber-700 transition-all shadow-xl shadow-amber-600/20 hover:-translate-y-1 touch-target"
         >
           Hemen Başla
         </button>

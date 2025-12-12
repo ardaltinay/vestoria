@@ -106,7 +106,9 @@ api.interceptors.response.use(
     }
 
     // Handle Session Expiry or Unauthorized Access
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    // Skip redirect for auth endpoints (login, register) - they handle errors themselves
+    const isAuthEndpoint = error.config?.url?.startsWith('/auth/');
+    if ((error.response?.status === 401 || error.response?.status === 403) && !isAuthEndpoint) {
       // Clear user data from local storage
       localStorage.removeItem('current_user');
 

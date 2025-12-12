@@ -36,8 +36,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDto request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDto request, HttpServletResponse response) {
         AuthResult auth = authService.register(request);
+        // Set auth cookie same as login
+        Cookie cookie = new Cookie("accessToken", auth.token());
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // Prod'da true
+        cookie.setPath("/");
+        cookie.setMaxAge(24 * 60 * 60); // 1 gün
+        response.addCookie(cookie);
         return ResponseEntity.ok(auth.user());
     }
 

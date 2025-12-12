@@ -56,7 +56,7 @@ public class AuthService {
             throw new BusinessRuleException("Bu Email Adresi Kullanılıyor!");
         }
 
-        UserEntity entity = UserEntity.builder().username(request.getUsername().toUpperCase())
+        UserEntity entity = UserEntity.builder().username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword())).email(request.getEmail()).level(1)
                 .balance(BigDecimal.valueOf(30000)).xp(1L).isAdmin(false).build();
 

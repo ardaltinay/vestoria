@@ -29,7 +29,7 @@ public class NotificationService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = { "getUserNotifications", "getUnreadCount" }, allEntries = true)
+    @CacheEvict(value = {"getUserNotifications", "getUnreadCount"}, allEntries = true)
     public void createNotification(UserEntity user, String message) {
         NotificationEntity notification = NotificationEntity.builder().user(user).message(message).isRead(false)
                 .build();
@@ -56,7 +56,7 @@ public class NotificationService {
 
     @Transactional
     @SuppressWarnings("null")
-    @CacheEvict(value = { "getUnreadCount", "getUserNotifications" }, allEntries = true)
+    @CacheEvict(value = {"getUnreadCount", "getUserNotifications"}, allEntries = true)
     public void markAsRead(UUID notificationId, String username) {
         NotificationEntity notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bildirim bulunamadı"));
@@ -70,7 +70,7 @@ public class NotificationService {
     }
 
     @Transactional
-    @CacheEvict(value = { "getUnreadCount", "getUserNotifications" }, allEntries = true)
+    @CacheEvict(value = {"getUnreadCount", "getUserNotifications"}, allEntries = true)
     public void markAllAsRead(String username) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
