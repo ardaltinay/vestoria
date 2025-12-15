@@ -37,6 +37,10 @@ dependencies:
   equatable: ^2.0.5
   dio_cookie_manager: ^3.3.0
   cookie_jar: ^4.0.8
+  
+  # WebSocket
+  stomp_dart_client: ^2.0.0
+  web_socket_channel: ^3.0.2
 
 dev_dependencies:
   flutter_test:

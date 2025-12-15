@@ -7,6 +7,7 @@ import '../../core/api/api_client.dart';
 import '../../data/models/building.dart';
 import '../../core/widgets/currency_icon.dart';
 import '../../core/widgets/product_emoji.dart';
+import '../../core/widgets/building_icons.dart';
 import '../../core/utils/translations.dart';
 
 // Building detail provider - fetches list and filters by ID
@@ -69,7 +70,8 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     if (remaining.isNegative) {
       _timer?.cancel();
       setState(() => _remainingTime = Duration.zero);
-      ref.invalidate(buildingDetailProvider(widget.buildingId));
+      // Don't invalidate provider here - just show "Tamamlandı" state
+      // User will click the button to complete the sale/production
     } else {
       setState(() => _remainingTime = remaining);
     }
@@ -98,7 +100,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -120,7 +122,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -129,8 +131,71 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
   }
 
   Future<void> _handleStartProduction(Building building) async {
-    // Show product selection dialog
-    final products = building.items.map((i) => i.name).toSet().toList();
+    // Load game data to get producible items for this building type
+    List<Map<String, dynamic>> products = [];
+    int? productionDuration;
+    
+    try {
+      final api = ApiClient();
+      
+      // Fetch production duration from backend config FIRST
+      try {
+        final configResponse = await api.getBuildingConfigs();
+        final List configs = configResponse.data ?? [];
+        
+        // Debug: print building type and tier
+        print('Looking for config: type=${building.type}, tier=${building.tier}');
+        print('Available configs count: ${configs.length}');
+        if (configs.isNotEmpty) {
+          print('First config sample: ${configs.first}');
+        }
+        
+        // Find matching config (case-insensitive comparison)
+        final config = configs.firstWhere(
+          (c) => (c['buildingType']?.toString().toUpperCase() == building.type.toUpperCase()) &&
+                 (c['tier']?.toString().toUpperCase() == building.tier?.toUpperCase()),
+          orElse: () => null,
+        );
+        
+        print('Found config: $config');
+        
+        if (config != null) {
+          final duration = config['productionDuration'];
+          print('Production duration from config: $duration (type: ${duration.runtimeType})');
+          if (duration != null) {
+            productionDuration = (duration as num).toInt();
+          }
+        }
+      } catch (e) {
+        print('Error loading building config: $e');
+      }
+      
+      // No default fallback - only show backend value
+      print('Final productionDuration: $productionDuration');
+      
+      // Get game data items for product options
+      final gameDataResponse = await api.getGameData();
+      final List gameData = gameDataResponse.data ?? [];
+      
+      // Find the definition for this building's subType
+      final subType = building.subType ?? building.type;
+      final definition = gameData.firstWhere(
+        (d) => d['id'] == subType,
+        orElse: () => null,
+      );
+      
+      if (definition != null) {
+        // Get produced item names
+        final List producedItems = definition['producedItemNames'] ?? [];
+        products = producedItems.map<Map<String, dynamic>>((name) => {
+          'id': name.toString(),
+          'name': name.toString(),
+        }).toList();
+      }
+    } catch (e) {
+      print('Error loading production data: $e');
+    }
+    
     if (products.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Üretilecek ürün bulunamadı'), backgroundColor: Colors.orange),
@@ -138,33 +203,102 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
       return;
     }
     
-    final selectedProduct = await showDialog<String>(
+    String? selectedProduct = products.first['id'];
+    
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Üretilecek Ürün Seçin'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: products.map((p) => ListTile(
-            leading: ProductEmoji(productName: p, size: 24),
-            title: Text(p),
-            onTap: () => Navigator.pop(context, p),
-          )).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.settings, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text('Üretim Emri'),
+            ],
           ),
-        ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Selection
+              Text('Üretilecek Mahsul', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.slate600)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedProduct,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: products.map((p) => DropdownMenuItem(
+                  value: p['id']?.toString(),
+                  child: Row(
+                    children: [
+                      ProductEmoji(productName: p['name']?.toString() ?? '', size: 20),
+                      const SizedBox(width: 8),
+                      Text(p['name']?.toString() ?? ''),
+                    ],
+                  ),
+                )).toList(),
+                onChanged: (v) => setDialogState(() => selectedProduct = v),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Estimated Time Info Box
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.info.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.schedule, color: AppColors.info, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Tahmini Süre',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.info),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      productionDuration != null ? '$productionDuration Dakika' : '-',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.info),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton.icon(
+              onPressed: selectedProduct != null ? () => Navigator.pop(context, true) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.warning,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Onayla ve Başlat'),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (selectedProduct == null) return;
+    if (confirmed != true || selectedProduct == null) return;
 
     setState(() => _isLoading = true);
     try {
       final api = ApiClient();
-      await api.startProduction(building.id, selectedProduct);
+      await api.startProduction(building.id, selectedProduct!);
       ref.invalidate(buildingDetailProvider(widget.buildingId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -174,11 +308,88 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleEditPrice(Building building, dynamic item) async {
+    final itemId = item.id?.toString() ?? '';
+    final itemName = item.name ?? 'Ürün';
+    double newPrice = (item.price ?? 0).toDouble();
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Fiyat Düzenle: $itemName'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mevcut Stok: ${item.quantity} adet'),
+              const SizedBox(height: 16),
+              Text('Birim Fiyat', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CurrencyIcon(size: 20),
+                  ),
+                  border: OutlineInputBorder(),
+                  hintText: 'Fiyat girin',
+                ),
+                controller: TextEditingController(text: newPrice.toStringAsFixed(0)),
+                onChanged: (v) => newPrice = double.tryParse(v) ?? newPrice,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Bu fiyat satış sırasında kullanılacaktır.',
+                style: TextStyle(color: AppColors.slate500, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('İptal'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: Icon(Icons.save),
+              label: Text('Kaydet'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    if (confirmed == true && itemId.isNotEmpty) {
+      setState(() => _isLoading = true);
+      try {
+        final api = ApiClient();
+        await api.updateItemPrice(itemId, newPrice);
+        ref.invalidate(buildingDetailProvider(widget.buildingId));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$itemName fiyatı güncellendi!'), backgroundColor: Colors.green),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -196,7 +407,98 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
+        );
+      }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleTransferToInventory(Building building, BuildingItem item) async {
+    int quantity = 1;
+    
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Envantere Aktar'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${item.name} ürününü genel envanterinize aktarmak istiyor musunuz?',
+                style: TextStyle(color: AppColors.slate600),
+              ),
+              const SizedBox(height: 16),
+              Text('Miktar', style: TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: quantity > 1 ? () => setDialogState(() => quantity--) : null,
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.slate300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$quantity',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: quantity < item.quantity ? () => setDialogState(() => quantity++) : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Maksimum: ${item.quantity}',
+                style: TextStyle(fontSize: 12, color: AppColors.slate500),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _performTransfer(building, item.id, quantity);
+              },
+              child: const Text('Aktar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performTransfer(Building building, String itemId, int quantity) async {
+    setState(() => _isLoading = true);
+    try {
+      final api = ApiClient();
+      await api.withdrawFromBuilding(building.id, productId, quantity);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ürünler envantere aktarıldı!'), backgroundColor: Colors.green),
+        );
+        ref.invalidate(buildingDetailProvider(widget.buildingId));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ApiClient.getErrorMessage(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -239,7 +541,10 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.store_mall_directory, size: 64, color: AppColors.slate400),
+                  Text(
+                    BuildingIcons.getEmoji('SHOP'),
+                    style: const TextStyle(fontSize: 48),
+                  ),
                   const SizedBox(height: 16),
                   const Text('İşletme bulunamadı'),
                   TextButton(
@@ -296,87 +601,145 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
   }
 
   Widget _buildHeaderCard(Building building) {
-    final typeEmoji = _getBuildingEmoji(widget.buildingType);
+    final typeEmoji = BuildingIcons.getEmoji(widget.buildingType);
     final subTypeTr = Translations.getBuildingSubTypeTr(building.subType);
     final tierLevel = Translations.getTierLevel(building.tier);
+    final tierColor = _getTierColor(building.tier);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
+          colors: [
+            AppColors.slate800,
+            AppColors.slate900,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: tierColor.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: tierColor.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Icon with level badge
-          Stack(
+          Row(
             children: [
+              // Emoji with glowing background
               Container(
-                width: 64,
-                height: 64,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  gradient: RadialGradient(
+                    colors: [
+                      tierColor.withOpacity(0.3),
+                      tierColor.withOpacity(0.1),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: tierColor.withOpacity(0.4),
+                    width: 2,
+                  ),
                 ),
                 child: Center(
-                  child: Text(typeEmoji, style: const TextStyle(fontSize: 32)),
+                  child: Text(typeEmoji, style: const TextStyle(fontSize: 36)),
                 ),
               ),
-              Positioned(
-                bottom: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.slate900,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Text(
-                    'LVL $tierLevel',
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
+              const SizedBox(width: 16),
+              
+              // Name and details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      building.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Type badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.slate700,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            subTypeTr,
+                            style: TextStyle(
+                              color: AppColors.slate300,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Level badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [tierColor, tierColor.withOpacity(0.7)],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star, size: 12, color: Colors.white),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Seviye $tierLevel',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 16),
-          
-          // Name and Type
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  building.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    subTypeTr,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
+  }
+
+  Color _getTierColor(String tier) {
+    switch (tier.toUpperCase()) {
+      case 'SMALL':
+        return AppColors.success;
+      case 'MEDIUM':
+        return AppColors.info;
+      case 'LARGE':
+        return const Color(0xFFB45309); // Amber/Gold
+      default:
+        return AppColors.primary;
+    }
   }
 
   Widget _buildStatsRow(Building building) {
@@ -390,7 +753,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
         // Tier/Capacity Card
         Expanded(
           child: _buildStatCard(
-            icon: Icons.business,
+            emoji: BuildingIcons.getEmoji(building.type),
             label: 'Kapasite',
             value: tierTr,
             subValue: 'Max: $maxStock Birim',
@@ -402,7 +765,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
         // Stock Card
         Expanded(
           child: _buildStatCard(
-            icon: Icons.inventory_2,
+            emoji: '📦',
             label: 'Doluluk',
             value: '$currentStock/$maxStock',
             subValue: '${(stockPercentage * 100).toStringAsFixed(0)}% dolu',
@@ -508,7 +871,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
   }
 
   Widget _buildStatCard({
-    required IconData icon,
+    required String emoji,
     required String label,
     required String value,
     required String subValue,
@@ -528,7 +891,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: color),
+              Text(emoji, style: const TextStyle(fontSize: 16)),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -684,10 +1047,9 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(
-                    isShop ? Icons.store : Icons.factory,
-                    size: 48,
-                    color: AppColors.slate300,
+                  Text(
+                    BuildingIcons.getEmoji(building.type),
+                    style: const TextStyle(fontSize: 48),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -713,20 +1075,41 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
             // Start Button
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading
-                    ? null
-                    : () => isShop ? _handleStartSales(building) : _handleStartProduction(building),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                icon: const Icon(Icons.play_arrow),
-                label: Text(
-                  isShop ? 'Satışı Başlat' : 'Üretimi Başlat',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
+              child: Builder(
+                builder: (context) {
+                  // For shops, check if there are items with quantity > 0
+                  final hasInventory = !isShop || building.items.any((item) => item.quantity > 0);
+                  final canStart = !_isLoading && hasInventory;
+                  
+                  return Column(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: canStart
+                            ? () => isShop ? _handleStartSales(building) : _handleStartProduction(building)
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: canStart ? AppColors.warning : AppColors.slate400,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          minimumSize: const Size(double.infinity, 56),
+                        ),
+                        icon: const Icon(Icons.play_arrow),
+                        label: Text(
+                          isShop ? 'Satışı Başlat' : 'Üretimi Başlat',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      if (isShop && !hasInventory)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Envanter boş, önce ürün eklemelisiniz',
+                            style: TextStyle(color: AppColors.error, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -736,6 +1119,9 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
   }
 
   Widget _buildInventorySection(Building building) {
+    // Filter out items with 0 quantity (production in progress)
+    final visibleItems = building.items.where((item) => item.quantity > 0).toList();
+    
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -762,7 +1148,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${building.items.length} Kalem',
+                    '${visibleItems.length} Kalem',
                     style: TextStyle(
                       color: AppColors.slate600,
                       fontSize: 12,
@@ -776,7 +1162,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
           const Divider(height: 1),
 
           // Items List
-          if (building.items.isEmpty)
+          if (visibleItems.isEmpty)
             Padding(
               padding: const EdgeInsets.all(32),
               child: Center(
@@ -801,11 +1187,14 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: building.items.length,
+              itemCount: visibleItems.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
-                final item = building.items[index];
+                final item = visibleItems[index];
                 return ListTile(
+                  onTap: isShop 
+                      ? () => _handleEditPrice(building, item) 
+                      : () => _handleTransferToInventory(building, item),
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -838,9 +1227,25 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
                                 color: AppColors.success,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            Icon(Icons.edit, size: 16, color: AppColors.slate400),
                           ],
                         )
-                      : null,
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.move_to_inbox, size: 18, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Aktar',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                 );
               },
             ),
@@ -866,16 +1271,5 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
         }
       }),
     );
-  }
-
-  String _getBuildingEmoji(String type) {
-    switch (type.toUpperCase()) {
-      case 'SHOP': return '🏪';
-      case 'FARM': return '🌾';
-      case 'FACTORY': return '🏭';
-      case 'MINE': return '⛏️';
-      case 'GARDEN': return '🌸';
-      default: return '🏢';
-    }
   }
 }

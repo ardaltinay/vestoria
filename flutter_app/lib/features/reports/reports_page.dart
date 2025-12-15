@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/widgets/currency_icon.dart';
+import '../../core/widgets/building_icons.dart';
 import 'package:intl/intl.dart';
 
 // Building stats provider
@@ -271,11 +273,11 @@ class ReportsPage extends ConsumerWidget {
 
   Widget _buildDistributionCard(BuildContext context, Map<String, dynamic> stats) {
     final items = [
-      ('🏪', 'Dükkanlar', stats['shopCount'] ?? 0),
-      ('🌾', 'Çiftlikler', stats['farmCount'] ?? 0),
-      ('🏭', 'Fabrikalar', stats['factoryCount'] ?? 0),
-      ('⛏️', 'Madenler', stats['mineCount'] ?? 0),
-      ('🌸', 'Bahçeler', stats['gardenCount'] ?? 0),
+      (BuildingIcons.shopEmoji, 'Dükkanlar', stats['shopCount'] ?? 0),
+      (BuildingIcons.gardenEmoji, 'Bahçeler', stats['gardenCount'] ?? 0),
+      (BuildingIcons.farmEmoji, 'Çiftlikler', stats['farmCount'] ?? 0),
+      (BuildingIcons.factoryEmoji, 'Fabrikalar', stats['factoryCount'] ?? 0),
+      (BuildingIcons.mineEmoji, 'Madenler', stats['mineCount'] ?? 0),
     ];
 
     return Container(
@@ -340,7 +342,7 @@ class ReportsPage extends ConsumerWidget {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.business, size: 48, color: AppColors.slate300),
+              Text(BuildingIcons.shopEmoji, style: const TextStyle(fontSize: 48)),
               const SizedBox(height: 12),
               Text('Henüz işletmeniz yok', style: TextStyle(color: AppColors.slate400)),
             ],
@@ -363,13 +365,26 @@ class ReportsPage extends ConsumerWidget {
         itemBuilder: (context, index) {
           final building = buildings[index];
           final type = (building['type'] ?? '').toString().toUpperCase();
-          final emoji = _getBuildingEmoji(type);
+          final emoji = BuildingIcons.getEmoji(type);
           final name = building['name'] ?? 'İşletme';
           final tier = building['tier'] ?? 'SMALL';
           final currentStock = building['currentStock'] ?? 0;
           final maxStock = building['maxStock'] ?? 100;
           
           return ListTile(
+            onTap: () {
+              final id = building['id'].toString();
+              String route;
+              switch (type) {
+                case 'SHOP': route = '/shops/$id'; break;
+                case 'FARM': route = '/farms/$id'; break;
+                case 'FACTORY': route = '/factories/$id'; break;
+                case 'MINE': route = '/mines/$id'; break;
+                case 'GARDEN': route = '/gardens/$id'; break;
+                default: route = '/shops/$id';
+              }
+              GoRouter.of(context).push(route);
+            },
             leading: Container(
               width: 40,
               height: 40,
@@ -389,17 +404,6 @@ class ReportsPage extends ConsumerWidget {
         },
       ),
     );
-  }
-
-  String _getBuildingEmoji(String type) {
-    switch (type) {
-      case 'SHOP': return '🏪';
-      case 'FARM': return '🌾';
-      case 'FACTORY': return '🏭';
-      case 'MINE': return '⛏️';
-      case 'GARDEN': return '🌸';
-      default: return '🏢';
-    }
   }
 
   String _getTierLabel(String tier) {

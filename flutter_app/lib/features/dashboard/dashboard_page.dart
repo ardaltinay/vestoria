@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/api/api_client.dart';
 import '../../core/widgets/currency_icon.dart';
+import '../../core/widgets/building_icons.dart';
 import 'package:intl/intl.dart';
 
 // Dashboard stats computed from buildings and inventory
@@ -75,6 +76,39 @@ final dashboardStatsProvider = FutureProvider<Map<String, int>>((ref) async {
   }
 });
 
+// Market trends provider
+final marketTrendsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final api = ApiClient();
+  try {
+    final response = await api.getMarketTrends();
+    final List data = response.data ?? [];
+    return data.map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item)).toList();
+  } catch (e) {
+    print('Market trends error: $e');
+    return [];
+  }
+});
+
+// Production summary provider - fetches buildings with their production stats
+final productionSummaryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final api = ApiClient();
+  try {
+    final response = await api.getAllBuildings();
+    final List buildings = response.data ?? [];
+    
+    // Filter buildings that have production (farms, factories, gardens, mines)
+    final productionBuildings = buildings
+        .where((b) => ['FARM', 'FACTORY', 'GARDEN', 'MINE'].contains(b['type']))
+        .map<Map<String, dynamic>>((b) => Map<String, dynamic>.from(b))
+        .toList();
+    
+    return productionBuildings;
+  } catch (e) {
+    print('Production summary error: $e');
+    return [];
+  }
+});
+
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
@@ -91,8 +125,8 @@ class DashboardPage extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
+        // Only refresh dashboard stats, don't invalidate auth state
         ref.invalidate(dashboardStatsProvider);
-        ref.invalidate(authProvider);
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -101,54 +135,119 @@ class DashboardPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Card
+            // Welcome Banner
             Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
+                  colors: [
+                    AppColors.slate800,
+                    AppColors.slate900,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Hoş geldiniz, ${user?.username ?? 'Oyuncu'}! 👋',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'İş imparatorluğunuzu büyütmeye devam edin',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                  Row(
+                    children: [
+                      // User avatar
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.primary.withOpacity(0.4),
+                              AppColors.primary.withOpacity(0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.5),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text('👋', style: TextStyle(fontSize: 24)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hoş geldiniz!',
+                              style: TextStyle(
+                                color: AppColors.slate400,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              user?.username ?? 'Oyuncu',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   // Balance display
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.slate700.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.slate600,
+                        width: 1,
+                      ),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const CurrencyIcon(size: 18),
-                        const SizedBox(width: 8),
                         Text(
-                          formatCurrency(user?.balance ?? 0),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                          'Bakiye',
+                          style: TextStyle(
+                            color: AppColors.slate400,
+                            fontSize: 14,
                           ),
+                        ),
+                        Row(
+                          children: [
+                            const CurrencyIcon(size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              formatCurrency(user?.balance ?? 0),
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -173,6 +272,36 @@ class DashboardPage extends ConsumerWidget {
             
             const SizedBox(height: 24),
             
+            // Market Trends Section
+            Text(
+              '📈 Pazar Trendleri',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 12),
+            
+            ref.watch(marketTrendsProvider).when(
+              data: (trends) => _buildMarketTrends(context, trends),
+              loading: () => _buildLoadingCard(),
+              error: (e, s) => _buildEmptyCard('Trend verisi yüklenemedi'),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Production Summary Section
+            Text(
+              '🏭 Üretim Özeti',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 12),
+            
+            ref.watch(productionSummaryProvider).when(
+              data: (buildings) => _buildProductionSummary(context, buildings),
+              loading: () => _buildLoadingCard(),
+              error: (e, s) => _buildEmptyCard('Üretim verisi yüklenemedi'),
+            ),
+            
+            const SizedBox(height: 24),
+            
             // Quick Actions
             Text(
               'Hızlı İşlemler',
@@ -186,35 +315,238 @@ class DashboardPage extends ConsumerWidget {
       ),
     );
   }
+  
+  Widget _buildMarketTrends(BuildContext context, List<Map<String, dynamic>> trends) {
+    if (trends.isEmpty) {
+      return _buildEmptyCard('Henüz pazar trendi yok');
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.slate50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Column(
+        children: trends.take(5).map((trend) {
+          final itemName = trend['itemName'] ?? 'Ürün';
+          final avgPrice = (trend['avgPrice'] ?? 0).toDouble();
+          final volume = trend['volume'] ?? 0;
+          final priceChange = (trend['priceChange'] ?? 0).toDouble();
+          final isUp = priceChange >= 0;
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    itemName,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+                Row(
+                  children: [
+                    const CurrencyIcon(size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      formatCurrency(avgPrice),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isUp ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 12,
+                        color: isUp ? AppColors.success : AppColors.error,
+                      ),
+                      Text(
+                        '${priceChange.abs().toStringAsFixed(1)}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isUp ? AppColors.success : AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+  
+  Widget _buildProductionSummary(BuildContext context, List<Map<String, dynamic>> buildings) {
+    if (buildings.isEmpty) {
+      return _buildEmptyCard('Henüz üretim yapan işletmeniz yok');
+    }
+    
+    // Group by type
+    final Map<String, List<Map<String, dynamic>>> byType = {};
+    for (final b in buildings) {
+      final type = b['type']?.toString() ?? 'OTHER';
+      byType.putIfAbsent(type, () => []).add(b);
+    }
+    
+    final typeLabels = {
+      'FARM': '${BuildingIcons.farmEmoji} Çiftlikler',
+      'FACTORY': '${BuildingIcons.factoryEmoji} Fabrikalar',
+      'MINE': '${BuildingIcons.mineEmoji} Madenler',
+      'GARDEN': '${BuildingIcons.gardenEmoji} Bahçeler',
+    };
+    
+    final typeRoutes = {
+      'FARM': '/home/farms',
+      'FACTORY': '/home/factories',
+      'MINE': '/home/mines',
+      'GARDEN': '/home/gardens',
+    };
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.slate50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: byType.entries.map((entry) {
+          final type = entry.key;
+          final typeBuildings = entry.value;
+          final label = typeLabels[type] ?? type;
+          final route = typeRoutes[type] ?? '/';
+          
+          // Calculate total production
+          int totalProduction = 0;
+          for (final b in typeBuildings) {
+            final items = b['items'] as List<dynamic>? ?? [];
+            for (final item in items) {
+              totalProduction += (item['quantity'] ?? 0) as int;
+            }
+          }
+          
+          return InkWell(
+            onTap: () => context.push(route),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right, size: 16, color: AppColors.slate400),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        '${typeBuildings.length} işletme',
+                        style: TextStyle(color: AppColors.slate500),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '$totalProduction ürün',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+  
+  Widget _buildLoadingCard() {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: AppColors.slate50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+  
+  Widget _buildEmptyCard(String message) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.slate50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: Center(
+        child: Text(
+          message,
+          style: TextStyle(color: AppColors.slate400),
+        ),
+      ),
+    );
+  }
 
   Widget _buildStatsGrid(BuildContext context, Map<String, dynamic> stats) {
     final items = [
       _StatItem(
-        emoji: '🏪',
+        emoji: BuildingIcons.shopEmoji,
         label: 'Dükkanlar',
         value: '${stats['shopCount'] ?? 0}',
         color: AppColors.info,
       ),
       _StatItem(
-        emoji: '🌾',
+        emoji: BuildingIcons.farmEmoji,
         label: 'Çiftlikler',
         value: '${stats['farmCount'] ?? 0}',
         color: AppColors.success,
       ),
       _StatItem(
-        emoji: '🏭',
+        emoji: BuildingIcons.factoryEmoji,
         label: 'Fabrikalar',
         value: '${stats['factoryCount'] ?? 0}',
         color: AppColors.warning,
       ),
       _StatItem(
-        emoji: '⛏️',
+        emoji: BuildingIcons.mineEmoji,
         label: 'Madenler',
         value: '${stats['mineCount'] ?? 0}',
         color: AppColors.slate600,
       ),
       _StatItem(
-        emoji: '🌸',
+        emoji: BuildingIcons.gardenEmoji,
         label: 'Bahçeler',
         value: '${stats['gardenCount'] ?? 0}',
         color: AppColors.success,

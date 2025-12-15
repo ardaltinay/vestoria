@@ -10,6 +10,7 @@ import '../../features/dashboard/dashboard_page.dart';
 import '../../features/shops/shops_page.dart';
 import '../../features/buildings/building_detail_page.dart';
 import '../../features/buildings/buildings_pages.dart';
+import '../../features/buildings/create_building_wizard.dart';
 import '../../features/marketplace/marketplace_page.dart';
 import '../../features/inventory/inventory_page.dart';
 import '../../features/social/social_page.dart';
@@ -163,6 +164,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => BuildingDetailPage(
           buildingId: state.pathParameters['id']!,
           buildingType: 'GARDEN',
+        ),
+      ),
+      
+      // Create Building Wizard
+      GoRoute(
+        path: '/create-building/:type',
+        builder: (context, state) => CreateBuildingWizard(
+          buildingType: state.pathParameters['type']!,
         ),
       ),
     ],

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
 import '../../data/models/building.dart';
 import '../../core/widgets/currency_icon.dart';
+import '../../core/widgets/building_icons.dart';
 
 // Shops provider
 final shopsProvider = FutureProvider<List<Building>>((ref) async {
@@ -67,8 +68,11 @@ class ShopsPage extends ConsumerWidget {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to create shop
+                    onPressed: () async {
+                      final result = await context.push('/create-building/SHOP');
+                      if (result == true) {
+                        ref.invalidate(shopsProvider);
+                      }
                     },
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Yeni'),
@@ -116,7 +120,7 @@ class ShopsPage extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.storefront_outlined, size: 80, color: AppColors.slate300),
+          Text(BuildingIcons.shopEmoji, style: const TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
           Text(
             'Henüz dükkanınız yok',
@@ -213,10 +217,11 @@ class _BuildingCard extends StatelessWidget {
                     color: AppColors.info.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    Icons.storefront,
-                    color: AppColors.info,
-                    size: 24,
+                  child: Center(
+                    child: Text(
+                      BuildingIcons.shopEmoji,
+                      style: const TextStyle(fontSize: 24),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

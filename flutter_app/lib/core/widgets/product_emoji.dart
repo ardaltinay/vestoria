@@ -1,63 +1,41 @@
 import 'package:flutter/material.dart';
 
 /// Emoji map matching Vue.js implementation
+/// Updated with comprehensive list of items
 const Map<String, String> productEmojis = {
-  // Grains & Bakery
-  "buğday": "🌾",
-  "ekmek": "🍞",
-  "un": "🥡",
-  
-  // Metals & Mining
+  // --- Raw Resources & Mining ---
   "demir": "⛓️",
+  "demir cevheri": "🪨",
   "kömür": "⚫",
   "altın": "🪙",
-  "çelik": "🔩",
-  "bakır": "🥉",
+  "altın cevheri": "✨",
   "gümüş": "🥈",
-  
-  // Dairy & Eggs
-  "süt": "🥛",
-  "yumurta": "🥚",
-  "peynir": "🧀",
-  "tereyağı": "🧈",
-  
-  // Textiles & Clothing
-  "kumaş": "🧵",
-  "kıyafet": "👕",
-  "deri": "🐄",
-  "çanta": "👜",
-  "ayakkabı": "👞",
-  "ceket": "🧥",
-  "pantolon": "👖",
-  "gömlek": "👔",
-  "elbise": "👗",
-  
-  // Jewelry
-  "mücevher": "💎",
-  "kolye": "📿",
-  "yüzük": "💍",
-  "küpe": "💎",
-  
-  // Tools & Equipment
-  "makine parçası": "⚙️",
-  "çekiç": "🔨",
-  "tornavida": "🪛",
-  "anahtar": "🔧",
-  "testere": "🪚",
-  
-  // Construction
-  "tuğla": "🧱",
+  "gümüş cevheri": "bijoux",
+  "bakır": "🥉",
+  "çelik": "🔩",
+  "petrol": "🛢️",
+  "benzin": "⛽",
+  "taş": "🪨",
+  "kum": "⏳",
+  "kil": "🧱",
   "odun": "🪵",
-  "mobilya": "🪑",
-  
-  // Electronics
-  "elektrik": "⚡",
-  "ampul": "💡",
-  "priz": "🔌",
-  "akü": "🔋",
-  
-  // Fruits
+  "kereste": "🪵",
+  "kalas": "📏",
+
+  // --- Farming & Agriculture ---
+  "buğday": "🌾",
+  "arpa": "🌾",
+  "yulaf": "🌾",
+  "mısır": "🌽",
+  "pamuk": "☁️",
+  "saman": "🌾",
+  "gübre": "💩",
+  "tohum": "🌱",
+  "yonca": "🍀",
+
+  // --- Food: Fruits ---
   "elma": "🍎",
+  "yeşil elma": "🍏",
   "armut": "🍐",
   "portakal": "🍊",
   "mandalina": "🍊",
@@ -66,79 +44,247 @@ const Map<String, String> productEmojis = {
   "karpuz": "🍉",
   "üzüm": "🍇",
   "çilek": "🍓",
+  "yaban mersini": "🫐",
   "kavun": "🍈",
   "kiraz": "🍒",
   "şeftali": "🍑",
   "ananas": "🍍",
   "mango": "🥭",
   "kivi": "🥝",
-  
-  // Vegetables
+  "hindistan cevizi": "🥥",
+  "nar": "🔴",
+  "avakado": "🥑",
+
+  // --- Food: Vegetables ---
   "domates": "🍅",
   "patates": "🥔",
   "havuç": "🥕",
-  "mısır": "🌽",
   "biber": "🌶️",
+  "yeşil biber": "🫑",
   "salatalık": "🥒",
   "marul": "🥬",
   "brokoli": "🥦",
   "sarımsak": "🧄",
   "soğan": "🧅",
   "mantar": "🍄",
-  "sebze": "🥦",
-  
-  // Meat & Fish
-  "et": "🥩",
-  "balık": "🐟",
-  "tavuk": "🍗",
-  "hindi": "🦃",
-  "sığır": "🐄",
-  "koyun": "🐑",
-  "keçi": "🐐",
-  
-  // Flowers & Plants
-  "çiçek": "🌸",
-  "ayçiçeği": "🌻",
-  "ağaç": "🌳",
-  "çimen": "🌿",
-  "yaprak": "🍃",
-  "toprak": "🌱",
-  
-  // Drinks
-  "kahve": "☕",
-  "çay": "🍵",
-  "meyve suyu": "🧃",
-  "ayran": "🥛",
-  "limonata": "🍋",
-  "su": "💧",
-  
-  // Food
+  "patlıcan": "🍆",
+  "mısır koçanı": "🌽",
+  "bezelye": "🫛",
+  "kabak": "🎃",
+
+  // --- Food: Animal Products ---
+  "süt": "🥛",
+  "yumurta": "🥚",
   "bal": "🍯",
+  "et": "🥩",
+  "biftek": "🥩",
+  "sosis": "🌭",
+  "salam": "🥓",
+  "tavuk": "🍗",
+  "tavuk butu": "🍗",
+  "hindi": "🦃",
+  "balık": "🐟",
+  "somon": "🍣",
+  "karides": "🦐",
+  "yengeç": "🦀",
+  "istakoz": "🦞",
+
+  // --- Food: Bakery & Processed ---
+  "ekmek": "🍞",
+  "baget": "🥖",
+  "kruvasan": "🥐",
+  "pide": "🫓",
+  "simit": "🥯",
+  "pancake": "🥞",
+  "waffle": "🧇",
+  "peynir": "🧀",
+  "tereyağı": "🧈",
+  "yoğurt": "🥣",
+  "krema": "🧁",
+  "un": "🥡",
   "şeker": "🍬",
-  "çikolata": "🍫",
-  "pasta": "🍰",
-  "kurabiye": "🍪",
-  "dondurma": "🍦",
+  "tuz": "🧂",
+  "zeytinyağı": "🫗",
+  "ayçiçek yağı": "🌻",
+
+  // --- Food: Meals ---
   "pizza": "🍕",
   "hamburger": "🍔",
   "sandviç": "🥪",
+  "sosisli": "🌭",
+  "patates kızartması": "🍟",
+  "taco": "🌮",
+  "burrito": "🌯",
+  "döner": "🥙",
+  "kebap": "🍢",
   "makarna": "🍝",
   "pilav": "🍚",
   "çorba": "🥣",
   "salata": "🥗",
+  "köfte": "🧆",
+  "sushi": "🍣",
+
+  // --- Food: Desserts ---
+  "dondurma": "🍦",
+  "pasta": "🍰",
+  "kek": "🎂",
+  "kurabiye": "🍪",
+  "çikolata": "🍫",
+  "şekerleme": "🍬",
+  "lolipop": "🍭",
+  "puding": "🍮",
+  "baklava": "🍯",
   
-  // Nuts & Seeds
-  "fındık": "🌰",
-  "fıstık": "🥜",
-  
-  // Weather & Nature
+  // --- Drinks ---
+  "su": "💧",
+  "kahve": "☕",
+  "çay": "🍵",
+  "sütlü kahve": "🧋",
+  "meyve suyu": "🧃",
+  "portakal suyu": "🍊",
+  "limonata": "🍋",
+  "bira": "🍺",
+  "şarap": "🍷",
+  "kola": "🥤",
+  "soda": "🥤",
+  "ayran": "🥛",
+
+  // --- Textiles & Clothing ---
+  "kumaş": "🧵",
+  "iplik": "🧶",
+  "yün": "🧶",
+  "pamuk ipliği": "🧵",
+  "deri": "🐄",
+  "kürk": "🧥",
+  "kıyafet": "👕",
+  "tişört": "👕",
+  "gömlek": "👔",
+  "pantolon": "👖",
+  "kot pantolon": "👖",
+  "elbise": "👗",
+  "etek": "👗",
+  "ceket": "🧥",
+  "mont": "🧥",
+  "ayakkabı": "👞",
+  "spor ayakkabı": "👟",
+  "topuklu ayakkabı": "👠",
+  "bot": "🥾",
+  "şapka": "🧢",
+  "eldiven": "🧤",
+  "atkı": "🧣",
+  "çorap": "🧦",
+  "çanta": "👜",
+  "sırt çantası": "🎒",
+  "cüzdan": "👛",
+  "kemer": "👖",
+
+  // --- Jewelry & Luxury (Specifics) ---
+  "mücevher": "💎",
+  "elmas": "💎",
+  "zümrüt": "💚",
+  "yakut": "❤️",
+  "safir": "💙",
+  "altın kolye": "📿",
+  "gümüş kolye": "📿",
+  "inci kolye": "📿",
+  "altın yüzük": "💍",
+  "gümüş yüzük": "💍",
+  "elmas yüzük": "💍",
+  "pırlanta yüzük": "💍",
+  "küpe": "👂", // or 💎
+  "altın küpe": "✨",
+  "gümüş küpe": "✨",
+  "bilezik": "⭕",
+  "altın bilezik": "🟡",
+  "saat": "⌚",
+  "kol saati": "⌚",
+  "lüks saat": "⌚",
+  "taç": "👑",
+
+  // --- Electronics & Technology ---
+  "elektrik": "⚡",
+  "devre kartı": "dk", // 📟
+  "işlemci": "🖲️",
+  "çip": "💾",
+  "bilgisayar": "💻",
+  "laptop": "💻",
+  "telefon": "📱",
+  "akıllı telefon": "📱",
+  "tablet": "📱",
+  "televizyon": "📺",
+  "kamera": "📷",
+  "fotoğraf makinesi": "📸",
+  "kulaklık": "🎧",
+  "hoparlör": "🔊",
+  "batarya": "🔋",
+  "pil": "🔋",
+  "kablo": "🔌",
+  "ampul": "💡",
+
+  // --- Home & Furniture ---
+  "masa": "🪑",
+  "sandalye": "🪑",
+  "koltuk": "🛋️",
+  "yatak": "🛏️",
+  "dolap": "🚪",
+  "halı": "🧶",
+  "perde": "🪟",
+  "lamba": "🛋️",
+  "vazo": "🏺",
+  "ayna": "🪞",
+
+  // --- Tools & Construction ---
+  "çekiç": "🔨",
+  "balta": "🪓",
+  "kazma": "⛏️",
+  "kürek": "cc", // 🥄 or 
+  "testere": "🪚",
+  "tornavida": "🪛",
+  "anahtar": "🔧",
+  "çivi": "📍",
+  "vida": "🔩",
+  "tuğla": "🧱",
+  "beton": "aaa", // 🧱
+  "sıva": "🧱",
+  "boya": "🎨",
+  "fırça": "🖌️",
+
+  // --- Vehicles ---
+  "araba": "🚗",
+  "kamyon": "🚛",
+  "tır": "🚛",
+  "motosiklet": "🏍️",
+  "bisiklet": "🚲",
+  "otobüs": "🚌",
+  "traktör": "🚜",
+  "uçak": "✈️",
+  "gemi": "🚢",
+  "tekne": "🛥️",
+  "lastik": "🛞",
+  "motor": "⚙️",
+
+  // --- Nature & Environment ---
   "güneş": "☀️",
-  "ay": "🌙",
-  "yıldız": "⭐",
-  "bulut": "☁️",
-  "yağmur": "🌧️",
-  "kar": "❄️",
-  "ateş": "🔥",
+  // "su": "💧", // Removed duplicate
+  "rüzgar": "💨",
+  "toprak": "🌱",
+  "ağaç": "🌳",
+  "orman": "🌲",
+  "çiçek": "🌸",
+  "gül": "🌹",
+  "lale": "🌷",
+  "papatya": "🌼",
+
+  // --- Miscellaneous ---
+  "kitap": "📖",
+  "kağıt": "📄",
+  "kalem": "✏️",
+  "kutu": "📦",
+  "paket": "📦",
+  "mektup": "✉️",
+  "para": "💵",
+  "oyuncak": "🧸",
+  "top": "⚽",
 };
 
 /// Widget to display product emoji based on name
@@ -152,29 +298,10 @@ class ProductEmoji extends StatelessWidget {
     this.size = 24,
   });
 
-  String _getEmoji() {
-    final searchName = productName.toLowerCase().trim();
-    
-    // Exact match
-    if (productEmojis.containsKey(searchName)) {
-      return productEmojis[searchName]!;
-    }
-    
-    // Partial match - check if product name contains any key
-    for (final entry in productEmojis.entries) {
-      if (searchName.contains(entry.key) || entry.key.contains(searchName)) {
-        return entry.value;
-      }
-    }
-    
-    // Default emoji
-    return "📦";
-  }
-
   @override
   Widget build(BuildContext context) {
     return Text(
-      _getEmoji(),
+      getProductEmoji(productName),
       style: TextStyle(fontSize: size),
     );
   }
@@ -184,17 +311,43 @@ class ProductEmoji extends StatelessWidget {
 String getProductEmoji(String productName) {
   final searchName = productName.toLowerCase().trim();
   
-  // Exact match
+  // 1. Exact match (Priority)
   if (productEmojis.containsKey(searchName)) {
     return productEmojis[searchName]!;
   }
   
-  // Partial match
+  // 2. Starts with (High correlation)
+  // e.g. "Altın Kolye" starts with "Altın" -> might be okay but we prefer specific
+  // But wait, the user wants "Gümüş Kolye" NOT to return "🥈" (Gümüş).
+  // So we should actually trust exact matches of words.
+  
+  // Strategy: 
+  // - If we have "gümüş kolye" in the map, exact match catches it.
+  // - If we have "gümüş" in the map, exact match catches "gümüş".
+  // - If input is "gümüş kolye" and NOT in map:
+  //   - partial match will find "gümüş".
+  //   - user says "don't use silver emoji for silver necklace".
+  //   - implying we MUST have specific emoji for necklace.
+  //   - IF we don't have it, maybe fallback is better than wrong specific?
+  //   - But mostly, providing the data is the solution.
+  
+  // Let's try to match the *longest* key that is contained in the search name.
+  // This helps if we have "elma" and "yeşil elma". Input "taze yeşil elma".
+  // "elma" matches. "yeşil elma" matches. "yeşil elma" is longer -> better match.
+  
+  String? bestMatch;
+  int bestMatchLen = 0;
+
   for (final entry in productEmojis.entries) {
-    if (searchName.contains(entry.key) || entry.key.contains(searchName)) {
-      return entry.value;
+    if (searchName.contains(entry.key)) {
+      if (entry.key.length > bestMatchLen) {
+        bestMatch = entry.value;
+        bestMatchLen = entry.key.length;
+      }
     }
   }
+  
+  if (bestMatch != null) return bestMatch;
   
   return "📦";
 }

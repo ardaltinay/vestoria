@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/vestoria_logo.dart';
+import '../../core/widgets/building_icons.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -93,11 +94,11 @@ class LandingPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _FeatureChip(icon: Icons.store, label: 'Dükkanlar'),
+                    _FeatureChip(emoji: BuildingIcons.shopEmoji, label: 'Dükkanlar'),
                     const SizedBox(width: 12),
-                    _FeatureChip(icon: Icons.agriculture, label: 'Çiftlikler'),
+                    _FeatureChip(emoji: BuildingIcons.farmEmoji, label: 'Çiftlikler'),
                     const SizedBox(width: 12),
-                    _FeatureChip(icon: Icons.factory, label: 'Fabrikalar'),
+                    _FeatureChip(emoji: BuildingIcons.factoryEmoji, label: 'Fabrikalar'),
                   ],
                 ),
               ],
@@ -110,10 +111,10 @@ class LandingPage extends StatelessWidget {
 }
 
 class _FeatureChip extends StatelessWidget {
-  final IconData icon;
+  final String emoji;
   final String label;
 
-  const _FeatureChip({required this.icon, required this.label});
+  const _FeatureChip({required this.emoji, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +128,7 @@ class _FeatureChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Text(emoji, style: const TextStyle(fontSize: 16)),
           const SizedBox(width: 6),
           Text(
             label,

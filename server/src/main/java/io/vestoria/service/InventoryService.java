@@ -139,9 +139,21 @@ public class InventoryService {
             return savedExisting;
         } else {
             // Check building capacity (Slots) - Only if we are creating a new item
-            long currentItemCount = itemRepository.countByBuilding_Id(buildingId);
-            if (currentItemCount >= building.getMaxSlots()) {
-                throw new BadRequestException("Bina slot kapasitesi dolu (" + building.getMaxSlots() + " slot)");
+            // Check if this new item adds a new product type (slot usage)
+            List<ItemEntity> currentItems = building.getItems();
+            long distinctProductTypeCount = currentItems.stream()
+                    .map(i -> i.getName().trim().toLowerCase())
+                    .distinct()
+                    .count();
+
+            // If the item we are adding is NOT already in the list (by name), we need a new
+            // slot
+            boolean isNewType = currentItems.stream()
+                    .noneMatch(i -> i.getName().trim().equalsIgnoreCase(item.getName().trim()));
+
+            if (isNewType && distinctProductTypeCount >= building.getMaxSlots()) {
+                throw new BadRequestException(
+                        "Bina slot kapasitesi dolu (" + building.getMaxSlots() + " farklı ürün çeşidi)");
             }
 
             // If transferring partial quantity, split the item
@@ -182,7 +194,6 @@ public class InventoryService {
             ItemEntity newItem = ItemEntity.builder().name(productName).quantity(quantity).unit(unit).tier(tier)
                     .qualityScore(qualityScore).owner(user).building(null) // Centralized inventory
                     .build();
-            @SuppressWarnings({"null", "unused"})
             ItemEntity saved = itemRepository.save(newItem);
         }
     }

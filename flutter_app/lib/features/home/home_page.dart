@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/notifications_provider.dart';
 import '../../core/widgets/currency_icon.dart';
 import '../../core/widgets/vestoria_logo.dart';
+import '../../core/widgets/building_icons.dart';
+import '../../core/api/api_client.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -33,11 +36,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     _SidebarSection(
       title: 'İşletmeler',
       items: [
-        _SidebarItem(path: '/home/shops', label: 'Dükkanlar', icon: Icons.storefront_outlined),
-        _SidebarItem(path: '/home/farms', label: 'Çiftlikler', icon: Icons.agriculture_outlined),
-        _SidebarItem(path: '/home/factories', label: 'Fabrikalar', icon: Icons.factory_outlined),
-        _SidebarItem(path: '/home/mines', label: 'Madenler', icon: Icons.hardware_outlined),
-        _SidebarItem(path: '/home/gardens', label: 'Bahçeler', icon: Icons.park_outlined),
+        _SidebarItem(path: '/home/shops', label: 'Dükkanlar', icon: BuildingIcons.shopOutlined),
+        _SidebarItem(path: '/home/gardens', label: 'Bahçeler', icon: BuildingIcons.gardenOutlined),
+        _SidebarItem(path: '/home/farms', label: 'Çiftlikler', icon: BuildingIcons.farmOutlined),
+        _SidebarItem(path: '/home/factories', label: 'Fabrikalar', icon: BuildingIcons.factoryOutlined),
+        _SidebarItem(path: '/home/mines', label: 'Madenler', icon: BuildingIcons.mineOutlined),
       ],
     ),
     _SidebarSection(
@@ -85,6 +88,131 @@ class _HomePageState extends ConsumerState<HomePage> {
       buffer.write(str[i]);
     }
     return buffer.toString();
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                margin: EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.slate300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Bildirimler',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        try {
+                          final api = ApiClient();
+                          await api.markAllNotificationsRead();
+                          ref.invalidate(notificationsProvider);
+                        } catch (e) {
+                          // Ignore
+                        }
+                      },
+                      child: Text('Tümünü Okundu Yap'),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1),
+              // List
+              Expanded(
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final notificationsAsync = ref.watch(notificationsProvider);
+                    return notificationsAsync.when(
+                      data: (notifications) {
+                        if (notifications.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.notifications_off, size: 48, color: AppColors.slate300),
+                                SizedBox(height: 12),
+                                Text('Henüz bildiriminiz yok', style: TextStyle(color: AppColors.slate500)),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollController,
+                          itemCount: notifications.length,
+                          separatorBuilder: (_, __) => Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final notif = notifications[index];
+                            return ListTile(
+                              leading: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: notif.isRead ? AppColors.slate200 : AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              title: Text(
+                                notif.message,
+                                style: TextStyle(
+                                  fontWeight: notif.isRead ? FontWeight.normal : FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _formatRelativeTime(notif.createdAt),
+                                style: TextStyle(color: AppColors.slate400, fontSize: 12),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => Center(child: CircularProgressIndicator()),
+                      error: (e, s) => Center(child: Text('Hata: $e')),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inMinutes < 1) return 'Az önce';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} dk önce';
+    if (diff.inHours < 24) return '${diff.inHours} saat önce';
+    if (diff.inDays < 7) return '${diff.inDays} gün önce';
+    return DateFormat('d MMM', 'tr_TR').format(dateTime);
   }
 
   @override
@@ -167,6 +295,46 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           
           const Spacer(),
+          
+          // Notifications Bell
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () => _showNotificationsSheet(context),
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final unreadCount = ref.watch(unreadNotificationsCountProvider);
+                    if (unreadCount == 0) return const SizedBox.shrink();
+                    return Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(width: 8),
           
           // Balance
           if (user != null)
@@ -429,6 +597,25 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildBottomNav(BuildContext context) {
+    // Compute active index from router location instead of stored state
+    final location = GoRouterState.of(context).matchedLocation;
+    int currentIndex = 0;
+    
+    // Check in reverse order (most specific paths first) to avoid /home matching everything
+    for (int i = _navItems.length - 1; i >= 0; i--) {
+      final path = _navItems[i].path;
+      // Exact match or startsWith path + / (to match child routes)
+      if (location == path || location.startsWith('$path/')) {
+        currentIndex = i;
+        break;
+      }
+    }
+    
+    // Special case: if location is exactly /home, index should be 0
+    if (location == '/home') {
+      currentIndex = 0;
+    }
+    
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -442,12 +629,11 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: _navItems.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
-              final isActive = _currentIndex == index;
+              final isActive = currentIndex == index;
               
               return Expanded(
                 child: InkWell(
                   onTap: () {
-                    setState(() => _currentIndex = index);
                     context.go(item.path);
                   },
                   child: Column(

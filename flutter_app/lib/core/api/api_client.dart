@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:dio/dio.dart';
 
 class ApiClient {
@@ -14,11 +15,100 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   static String? _accessToken;
   static String? _csrfToken;
+  static final Random _random = Random.secure();
   
   late final Dio _dio;
   
   factory ApiClient() {
     return _instance;
+  }
+  
+  /// Extracts a user-friendly error message from a DioException or any error
+  /// Tries to get message from backend response, falls back to status-based messages
+  static String getErrorMessage(dynamic error) {
+    if (error is DioException) {
+      // Try to get message from backend response
+      final data = error.response?.data;
+      if (data != null) {
+        // Backend may return message in different formats
+        if (data is Map) {
+          // 1. Try 'message' key (Standard)
+          if (data['message'] != null && data['message'].toString().isNotEmpty) {
+            return data['message'].toString();
+          }
+          // 2. Try 'error' key
+          if (data['error'] != null) {
+            final err = data['error'];
+            if (err is String && err.isNotEmpty) return err;
+            if (err is Map && err['message'] != null) return err['message'].toString();
+          }
+          // 3. Try 'detail' key (Spring/Validation)
+          if (data['detail'] != null && data['detail'].toString().isNotEmpty) {
+            return data['detail'].toString();
+          }
+        } else if (data is String && data.isNotEmpty) {
+          // Sometimes backend returns plain string error
+          return data;
+        }
+      }
+      
+      // Fall back to status-based messages
+      final statusCode = error.response?.statusCode;
+      switch (statusCode) {
+        case 400:
+          return 'Geçersiz istek (400)';
+        case 401:
+          return 'Oturum süresi doldu, lütfen tekrar giriş yapın';
+        case 403:
+          return 'Bu işlem için yetkiniz yok';
+        case 404:
+          return 'İstenen kaynak bulunamadı';
+        case 409:
+          return 'Çakışma oluştu, lütfen sayfayı yenileyin';
+        case 422:
+          return 'Veri doğrulama hatası';
+        case 500:
+          return 'Sunucu hatası (500). Lütfen daha sonra tekrar deneyin.';
+        case 502:
+        case 503:
+        case 504:
+          return 'Sunucuya ulaşılamıyor. Bakım çalışması olabilir.';
+        default:
+          if (error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.receiveTimeout ||
+              error.type == DioExceptionType.sendTimeout) {
+            return 'Bağlantı zaman aşımı. İnternet bağlantınızı kontrol edin.';
+          }
+          if (error.type == DioExceptionType.connectionError) {
+            return 'Bağlantı hatası. Sunucuya erişilemiyor.';
+          }
+          return 'Bir hata oluştu (${statusCode ?? "bilinmeyen"})';
+      }
+    }
+    
+    // For non-Dio errors
+    if (error is String) {
+      return error;
+    }
+    return error?.toString() ?? 'Beklenmeyen bir hata oluştu';
+  }
+  
+  // Generate UUID v4 for Idempotency-Key
+  static String _generateUUID() {
+    const hexDigits = '0123456789abcdef';
+    final uuid = StringBuffer();
+    for (int i = 0; i < 36; i++) {
+      if (i == 8 || i == 13 || i == 18 || i == 23) {
+        uuid.write('-');
+      } else if (i == 14) {
+        uuid.write('4'); // UUID version 4
+      } else if (i == 19) {
+        uuid.write(hexDigits[(_random.nextInt(4) + 8)]); // Variant
+      } else {
+        uuid.write(hexDigits[_random.nextInt(16)]);
+      }
+    }
+    return uuid.toString();
   }
   
   ApiClient._internal() {
@@ -46,10 +136,13 @@ class ApiClient {
           options.headers['Cookie'] = cookies.join('; ');
         }
         
-        // Add CSRF token as header for mutating requests (POST, PUT, DELETE, PATCH)
-        if (_csrfToken != null && 
-            ['POST', 'PUT', 'DELETE', 'PATCH'].contains(options.method.toUpperCase())) {
-          options.headers['X-XSRF-TOKEN'] = _csrfToken;
+        // Add CSRF token and Idempotency-Key for mutating requests (POST, PUT, DELETE, PATCH)
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].contains(options.method.toUpperCase())) {
+          if (_csrfToken != null) {
+            options.headers['X-XSRF-TOKEN'] = _csrfToken;
+          }
+          // Generate unique idempotency key for each request
+          options.headers['Idempotency-Key'] = _generateUUID();
         }
         
         print('API Request: ${options.method} ${options.path}');
@@ -179,8 +272,40 @@ class ApiClient {
   }
   
   // Buildings - Backend uses /build/list for all buildings
+  // Dedup logic like Vue.js BuildingService
+  static Future<Response>? _buildingsPromise;
+  static DateTime? _lastBuildingsCall;
+  
   Future<Response> getAllBuildings() {
-    return _dio.get('/build/list');
+    // Dedup concurrent calls - return existing promise if one is pending
+    if (_buildingsPromise != null) {
+      return _buildingsPromise!;
+    }
+    
+    // Throttle: minimum 500ms between calls
+    final now = DateTime.now();
+    if (_lastBuildingsCall != null) {
+      final elapsed = now.difference(_lastBuildingsCall!);
+      if (elapsed.inMilliseconds < 500) {
+        // Return cached response if called too quickly
+        print('Throttled getAllBuildings - too soon');
+        return Future.value(Response(
+          requestOptions: RequestOptions(path: '/build/list'),
+          statusCode: 429,
+          data: {'error': 'Throttled'},
+        ));
+      }
+    }
+    _lastBuildingsCall = now;
+    
+    _buildingsPromise = _dio.get('/build/list').whenComplete(() {
+      // Clear promise after 100ms to allow subsequent refreshes
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _buildingsPromise = null;
+      });
+    });
+    
+    return _buildingsPromise!;
   }
   
   // Convenience methods that filter by building type
@@ -234,12 +359,23 @@ class ApiClient {
     return _dio.get('/market/listings');
   }
   
-  Future<Response> createMarketListing(Map<String, dynamic> data) {
-    return _dio.post('/markets', data: data);
+  Future<Response> createMarketListing(String itemId, {required int quantity, required double price}) {
+    return _dio.post('/market/list/$itemId', data: {
+      'quantity': quantity,
+      'price': price,
+    });
   }
   
   Future<Response> buyMarketListing(String id, {int quantity = 1}) {
     return _dio.post('/market/buy/$id', data: {'quantity': quantity});
+  }
+  
+  Future<Response> cancelMarketListing(String id) {
+    return _dio.delete('/market/listings/$id');
+  }
+  
+  Future<Response> getMarketTrends() {
+    return _dio.get('/market/trends');
   }
   
   // Inventory - centralized (items not assigned to any building)
@@ -252,18 +388,57 @@ class ApiClient {
     return _dio.get('/announcements');
   }
   
+  // Notifications
+  Future<Response> getNotifications() {
+    return _dio.get('/notifications');
+  }
+  
+  Future<Response> markNotificationRead(String id) {
+    return _dio.post('/notifications/$id/read');
+  }
+  
+  Future<Response> markAllNotificationsRead() {
+    return _dio.post('/notifications/read-all');
+  }
+  
+  // Building withdraw - transfer items from building to central inventory
+  Future<Response> withdrawFromBuilding(String buildingId, String itemId, int quantity) {
+    return _dio.post('/build/$buildingId/withdraw', data: {
+      'productId': itemId, // Backend expects 'productId' key in DTO, but we send UUID now
+      'quantity': quantity,
+    });
+  }
+  
   // Game Data
   Future<Response> getGameData() {
     return _dio.get('/game-data/items');
   }
   
   Future<Response> getBuildingConfigs() {
-    return _dio.get('/game-data/buildings');
+    return _dio.get('/build/config');
   }
   
   // Building Detail
   Future<Response> getBuildingById(String id) {
     return _dio.get('/build/$id');
+  }
+  
+  // Create Building
+  Future<Response> createBuilding({
+    required String type,
+    required String tier,
+    String? subType, // Nullable - non-SHOP buildings send null
+    required String name,
+  }) {
+    final data = <String, dynamic>{
+      'type': type,
+      'tier': tier,
+      'name': name,
+    };
+    if (subType != null) {
+      data['subType'] = subType;
+    }
+    return _dio.post('/build/create', data: data);
   }
   
   // Building Actions
@@ -298,9 +473,17 @@ class ApiClient {
     });
   }
   
-  Future<Response> withdrawFromBuilding(String buildingId, String itemName, int quantity) {
-    return _dio.post('/build/$buildingId/withdraw', data: {
-      'itemName': itemName,
+  Future<Response> updateItemPrice(String itemId, double price) {
+    return _dio.put('/inventory/item/$itemId/price', data: {
+      'price': price,
+    });
+  }
+  
+  // Transfer from inventory to building
+  Future<Response> transferFromInventory(String itemId, String buildingId, int quantity) {
+    return _dio.post('/inventory/transfer', data: {
+      'itemId': itemId,
+      'buildingId': buildingId,
       'quantity': quantity,
     });
   }

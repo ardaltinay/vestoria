@@ -5,6 +5,8 @@ import '../../core/api/api_client.dart';
 import '../../core/widgets/currency_icon.dart';
 import '../../core/widgets/product_emoji.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/services/websocket_service.dart';
+import '../inventory/inventory_page.dart'; // For inventoryProvider
 
 // Marketplace listings provider
 final marketplaceProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -40,6 +42,16 @@ class MarketplacePage extends ConsumerStatefulWidget {
 class _MarketplacePageState extends ConsumerState<MarketplacePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Map<String, dynamic>? _lastUpdate;
+
+  @override
+  void initState() {
+    super.initState();
+    // Connect to WebSocket
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(marketWebSocketProvider.notifier).connect();
+    });
+  }
 
   @override
   void dispose() {
@@ -58,6 +70,22 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
       buffer.write(str[i]);
     }
     return buffer.toString();
+  }
+
+  String _getUnitTr(String? unit) {
+    switch (unit?.toUpperCase()) {
+      case 'KG':
+        return 'kg';
+      case 'LITRE':
+      case 'LITER':
+      case 'LT':
+        return 'lt';
+      case 'ADET':
+      case 'PIECE':
+        return 'adet';
+      default:
+        return unit?.toLowerCase() ?? 'adet';
+    }
   }
 
   IconData _getProductIcon(String name) {
@@ -108,51 +136,162 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
   }
 
   Future<void> _handleBuy(Map<String, dynamic> listing) async {
+    final itemName = listing['itemName'] ?? 'Ürün';
+    final maxQuantity = listing['quantity'] ?? 1;
+    final pricePerUnit = (listing['price'] ?? 0).toDouble();
+    final sellerUsername = listing['sellerUsername'] ?? '';
+    final isVestoria = sellerUsername.toString().toLowerCase() == 'vestoria';
+    
+    int quantity = 1;
+    
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Satın Al'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${listing['itemName']} satın almak istiyor musunuz?'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text('Fiyat: '),
-                CurrencyIcon(size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  _formatCurrency(listing['price'] ?? 0),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Satın Al: $itemName'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Seller info
+              Row(
+                children: [
+                  Icon(Icons.person_outline, size: 16, color: AppColors.slate500),
+                  SizedBox(width: 4),
+                  Text('Satıcı: $sellerUsername', style: TextStyle(color: AppColors.slate500)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.slate500),
+                  SizedBox(width: 4),
+                  Text('Stok: ${isVestoria ? '∞' : maxQuantity}', style: TextStyle(color: AppColors.slate500)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Price per unit
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.slate100,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Birim Fiyat:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    Row(
+                      children: [
+                        CurrencyIcon(size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          _formatCurrency(pricePerUnit),
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Quantity selection
+              Text('Miktar', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: AppColors.primary),
+                    onPressed: quantity > 1 ? () => setDialogState(() => quantity--) : null,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintText: 'Miktar',
+                        suffixText: _getUnitTr(listing['unit']),
+                      ),
+                      controller: TextEditingController(text: quantity.toString()),
+                      onChanged: (v) {
+                        final parsed = int.tryParse(v);
+                        if (parsed != null && parsed >= 1) {
+                          final max = isVestoria ? 10000 : maxQuantity;
+                          setDialogState(() => quantity = parsed.clamp(1, max) as int);
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.add_circle_outline, color: AppColors.primary),
+                    onPressed: (isVestoria || quantity < maxQuantity) ? () => setDialogState(() => quantity++) : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Total price
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Toplam Tutar:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                    Row(
+                      children: [
+                        CurrencyIcon(size: 18),
+                        SizedBox(width: 4),
+                        Text(
+                          _formatCurrency(quantity * pricePerUnit),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.success),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: Icon(Icons.shopping_cart),
+              label: Text('Satın Al'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Satın Al'),
-          ),
-        ],
       ),
     );
 
     if (confirmed == true) {
       try {
         final api = ApiClient();
-        await api.buyMarketListing(listing['id'].toString());
+        await api.buyMarketListing(listing['id'].toString(), quantity: quantity);
+        
+        // Refresh marketplace, and user state (balance & inventory)
         ref.invalidate(marketplaceProvider);
+        ref.read(authProvider.notifier).refreshUser();
+        // Also invalidate inventory so it's fresh when user navigates there
+        ref.invalidate(inventoryProvider as ProviderOrFamily); 
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ürün başarıyla satın alındı!'),
+            SnackBar(
+              content: Text('$quantity adet $itemName satın alındı!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -161,8 +300,74 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Satın alma başarısız: $e'),
+              content: Text(ApiClient.getErrorMessage(e)),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleCancel(Map<String, dynamic> listing) async {
+    final itemName = listing['itemName'] ?? 'Ürün';
+    final quantity = listing['quantity'] ?? 0;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+            const SizedBox(width: 8),
+            const Text('İlanı Kaldır'),
+          ],
+        ),
+        content: Text(
+          '$itemName ($quantity adet) ilanını pazardan kaldırmak istediğinize emin misiniz?\n\nÜrünler envanterinize geri dönecektir.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Kaldır'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final api = ApiClient();
+        await api.cancelMarketListing(listing['id'].toString());
+        
+        ref.invalidate(marketplaceProvider);
+        // Invalidate inventory so canceled items appear immediately
+        ref.invalidate(inventoryProvider as ProviderOrFamily);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$itemName ilanı kaldırıldı'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ApiClient.getErrorMessage(e)),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -174,6 +379,16 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
   Widget build(BuildContext context) {
     final listingsAsync = ref.watch(marketplaceProvider);
     final currentUser = ref.watch(authProvider).user;
+    
+    // Listen for WebSocket updates and auto-refresh
+    final wsState = ref.watch(marketWebSocketProvider);
+    if (wsState.lastUpdate != null && wsState.lastUpdate != _lastUpdate) {
+      _lastUpdate = wsState.lastUpdate;
+      // Auto-refresh when market update received
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(marketplaceProvider);
+      });
+    }
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(marketplaceProvider),
@@ -447,7 +662,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  isVestoria ? '∞' : quantity.toString(),
+                  isVestoria ? '∞' : '$quantity ${_getUnitTr(listing['unit'])}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -465,11 +680,7 @@ class _MarketplacePageState extends ConsumerState<MarketplacePage> {
               // Action Button
               if (isOwnListing)
                 OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('İlan kaldırma özelliği yakında')),
-                    );
-                  },
+                  onPressed: () => _handleCancel(listing),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: BorderSide(color: AppColors.error.withOpacity(0.3)),

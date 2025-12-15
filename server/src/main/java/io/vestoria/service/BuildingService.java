@@ -98,18 +98,62 @@ public class BuildingService {
         float durationMinutes = getProductionDuration(building.getType(), building.getTier());
         long seconds = (long) (durationMinutes * 60);
 
-        // Find or create the item and mark it as producing
-        ItemEntity item = building.getItems().stream().filter(i -> i.getName().equals(productId)).findFirst()
+        // 1. Calculate Quality Score FIRST to check for existing matches
+        ItemTier itemTier = ItemTier.LOW;
+        BigDecimal qualityScore = BigDecimal.valueOf(50); // Default for SMALL/LOW
+
+        if (building.getTier() == BuildingTier.MEDIUM) {
+            itemTier = ItemTier.MEDIUM;
+            qualityScore = BigDecimal.valueOf(75);
+        }
+        if (building.getTier() == BuildingTier.LARGE) {
+            itemTier = ItemTier.HIGH;
+            qualityScore = BigDecimal.valueOf(100);
+        }
+
+        // Luck factor for quality: -10 to +10
+        double qualityLuck = (Math.random() * 20) - 10;
+        qualityScore = qualityScore.add(BigDecimal.valueOf(qualityLuck));
+
+        // Level factor for quality: +0.2 per level
+        int userLevel = building.getOwner().getLevel() != null ? building.getOwner().getLevel() : 1;
+        double levelBonus = userLevel * 0.2;
+        qualityScore = qualityScore.add(BigDecimal.valueOf(levelBonus));
+
+        // Clamp quality (min 10, max 100)
+        if (qualityScore.compareTo(BigDecimal.TEN) < 0)
+            qualityScore = BigDecimal.TEN;
+        if (qualityScore.compareTo(BigDecimal.valueOf(100)) > 0)
+            qualityScore = BigDecimal.valueOf(100);
+
+        // Round to 2 decimal places to make exact matching possible/realistic
+        qualityScore = qualityScore.setScale(2, java.math.RoundingMode.HALF_UP);
+
+        // 2. Check if an item with the EXACT same name and quality already exists
+        final BigDecimal finalQuality = qualityScore;
+        ItemEntity item = building.getItems().stream()
+                .filter(i -> i.getName().trim().equalsIgnoreCase(productId.trim())
+                        && i.getQualityScore().compareTo(finalQuality) == 0)
+                .findFirst()
                 .orElse(null);
 
         if (item == null) {
-            // Check slot limit
-            int currentSlots = building.getItems().size();
+            // New batch required
+
+            // Validation: Check if we have room for a new item type (if it's a new type)
+            long distinctProductTypeCount = building.getItems().stream()
+                    .map(i -> i.getName().trim().toLowerCase())
+                    .distinct()
+                    .count();
+
+            boolean isNewType = building.getItems().stream()
+                    .noneMatch(i -> i.getName().trim().equalsIgnoreCase(productId.trim()));
+
             int maxSlots = getMaxSlots(building.getTier());
 
-            if (currentSlots >= maxSlots) {
+            if (isNewType && distinctProductTypeCount >= maxSlots) {
                 throw new BusinessRuleException("Depo çeşit sınırına ulaşıldı! (Bu seviye için Max: " + maxSlots
-                        + " çeşit) Burdaki ürünleri genel envantere aktarıp yeni ürün üretebilirsiniz.");
+                        + " çeşit) Farklı bir ürün üretmek için mevcut çeşitlerden birini tamamen boşaltmalısınız.");
             }
 
             ItemUnit unit = ItemUnit.PIECE;
@@ -117,35 +161,17 @@ public class BuildingService {
                 unit = ItemUnit.KG;
             }
 
-            ItemTier itemTier = ItemTier.LOW;
-            BigDecimal qualityScore = BigDecimal.valueOf(50); // Default for SMALL/LOW
+            item = ItemEntity.builder()
+                    .name(productId)
+                    .quantity(0) // Starts at 0, filled at collection
+                    .building(building)
+                    .owner(building.getOwner())
+                    .unit(unit)
+                    .tier(itemTier)
+                    .qualityScore(finalQuality)
+                    .isProducing(true)
+                    .build();
 
-            if (building.getTier() == BuildingTier.MEDIUM) {
-                itemTier = ItemTier.MEDIUM;
-                qualityScore = BigDecimal.valueOf(75);
-            }
-            if (building.getTier() == BuildingTier.LARGE) {
-                itemTier = ItemTier.HIGH;
-                qualityScore = BigDecimal.valueOf(100);
-            }
-
-            // Luck factor for quality: -5 to +5
-            double qualityLuck = (Math.random() * 20) - 10;
-            qualityScore = qualityScore.add(BigDecimal.valueOf(qualityLuck));
-
-            // Level factor for quality: +0.2 per level
-            int userLevel = building.getOwner().getLevel() != null ? building.getOwner().getLevel() : 1;
-            double levelBonus = userLevel * 0.2;
-            qualityScore = qualityScore.add(BigDecimal.valueOf(levelBonus));
-
-            // Clamp quality (min 10, max 100)
-            if (qualityScore.compareTo(BigDecimal.TEN) < 0)
-                qualityScore = BigDecimal.TEN;
-            if (qualityScore.compareTo(BigDecimal.valueOf(100)) > 0)
-                qualityScore = BigDecimal.valueOf(100);
-
-            item = ItemEntity.builder().name(productId).quantity(0).building(building).owner(building.getOwner())
-                    .unit(unit).tier(itemTier).qualityScore(qualityScore).build();
             building.getItems().add(item);
         }
 
@@ -213,7 +239,7 @@ public class BuildingService {
     }
 
     @Transactional
-    public void withdrawFromBuilding(@NonNull UUID buildingId, @NonNull String username, @NonNull String productId,
+    public void withdrawFromBuilding(@NonNull UUID buildingId, @NonNull String username, @NonNull String itemIdStr,
             int quantity) {
         BuildingEntity building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("İşletme bulunamadı"));
@@ -229,7 +255,10 @@ public class BuildingService {
             throw new BusinessRuleException("Geçersiz miktar");
         }
 
-        ItemEntity item = building.getItems().stream().filter(i -> i.getName().equals(productId)).findFirst()
+        UUID itemId = UUID.fromString(itemIdStr);
+        ItemEntity item = building.getItems().stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı"));
 
         if (item.getQuantity() < quantity) {
@@ -240,7 +269,7 @@ public class BuildingService {
         item.setQuantity(item.getQuantity() - quantity);
 
         // Add to user inventory
-        inventoryService.addItemToInventory(user, productId, quantity, item.getUnit(), item.getTier(),
+        inventoryService.addItemToInventory(user, item.getName(), quantity, item.getUnit(), item.getTier(),
                 item.getQualityScore());
 
         if (item.getQuantity() == 0) {
@@ -472,13 +501,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseCost = baseCost.add(BigDecimal.valueOf(10000));
                     break;
-                case LARGE :
+                case LARGE:
                     baseCost = baseCost.add(BigDecimal.valueOf(25000));
                     break;
-                default : // SMALL
+                default: // SMALL
                     break;
             }
         }
@@ -499,13 +528,13 @@ public class BuildingService {
         // Tier Multiplier
         if (tier != null && type != BuildingType.SHOP) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     rate = rate.multiply(BigDecimal.valueOf(1.5));
                     break;
-                case LARGE :
+                case LARGE:
                     rate = rate.multiply(BigDecimal.valueOf(2.0));
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -532,13 +561,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     base = (int) (base * 2.0);
                     break;
-                case LARGE :
+                case LARGE:
                     base = (int) (base * 5.0);
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -556,13 +585,13 @@ public class BuildingService {
 
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE :
+                case LARGE:
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default :
+                default:
                     break;
             }
         }
@@ -574,13 +603,13 @@ public class BuildingService {
         float baseMinutes = 10;
         if (tier != null) {
             switch (tier) {
-                case MEDIUM :
+                case MEDIUM:
                     baseMinutes = (long) (baseMinutes * 0.8);
                     break;
-                case LARGE :
+                case LARGE:
                     baseMinutes = (long) (baseMinutes * 0.6);
                     break;
-                default :
+                default:
                     break;
             }
         }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
+import '../../core/widgets/building_icons.dart';
 import '../../data/models/building.dart';
 
 // Farms provider
@@ -21,12 +22,13 @@ class FarmsPage extends ConsumerWidget {
 
     return _BuildingListPage(
       title: 'Çiftliklerim',
-      icon: Icons.agriculture,
+      icon: BuildingIcons.farm,
       iconColor: AppColors.success,
       asyncData: farmsAsync,
       onRefresh: () async => ref.invalidate(farmsProvider),
       emptyTitle: 'Henüz çiftliğiniz yok',
       emptySubtitle: 'İlk çiftliğinizi oluşturun',
+      buildingType: 'FARM',
     );
   }
 }
@@ -47,12 +49,13 @@ class FactoriesPage extends ConsumerWidget {
 
     return _BuildingListPage(
       title: 'Fabrikalarım',
-      icon: Icons.factory,
+      icon: BuildingIcons.factory,
       iconColor: AppColors.warning,
       asyncData: factoriesAsync,
       onRefresh: () async => ref.invalidate(factoriesProvider),
       emptyTitle: 'Henüz fabrikanız yok',
       emptySubtitle: 'İlk fabrikanızı oluşturun',
+      buildingType: 'FACTORY',
     );
   }
 }
@@ -73,12 +76,13 @@ class MinesPage extends ConsumerWidget {
 
     return _BuildingListPage(
       title: 'Madenlerim',
-      icon: Icons.hardware,
+      icon: BuildingIcons.mine,
       iconColor: AppColors.slate600,
       asyncData: minesAsync,
       onRefresh: () async => ref.invalidate(minesProvider),
       emptyTitle: 'Henüz madeniniz yok',
       emptySubtitle: 'İlk madeninizi oluşturun',
+      buildingType: 'MINE',
     );
   }
 }
@@ -99,12 +103,13 @@ class GardensPage extends ConsumerWidget {
 
     return _BuildingListPage(
       title: 'Bahçelerim',
-      icon: Icons.park,
+      icon: BuildingIcons.garden,
       iconColor: AppColors.success,
       asyncData: gardensAsync,
       onRefresh: () async => ref.invalidate(gardensProvider),
       emptyTitle: 'Henüz bahçeniz yok',
       emptySubtitle: 'İlk bahçenizi oluşturun',
+      buildingType: 'GARDEN',
     );
   }
 }
@@ -118,6 +123,7 @@ class _BuildingListPage extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final String emptyTitle;
   final String emptySubtitle;
+  final String buildingType;
 
   const _BuildingListPage({
     required this.title,
@@ -127,6 +133,7 @@ class _BuildingListPage extends StatelessWidget {
     required this.onRefresh,
     required this.emptyTitle,
     required this.emptySubtitle,
+    required this.buildingType,
   });
 
   @override
@@ -176,8 +183,11 @@ class _BuildingListPage extends StatelessWidget {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Navigate to create
+                    onPressed: () async {
+                      final result = await context.push('/create-building/$buildingType');
+                      if (result == true) {
+                        onRefresh();
+                      }
                     },
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Yeni'),
@@ -326,7 +336,12 @@ class _BuildingCard extends StatelessWidget {
                 color: iconColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: iconColor, size: 24),
+              child: Center(
+                child: Text(
+                  BuildingIcons.getEmoji(building.type),
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

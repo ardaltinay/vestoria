@@ -1,38 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/widgets/currency_icon.dart';
 import '../../core/widgets/product_emoji.dart';
+import '../buildings/building_detail_page.dart'; // For buildingDetailProvider
 
-// Inventory provider
+// Inventory provider - filters out items with 0 or less quantity
 final inventoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final api = ApiClient();
   try {
     final response = await api.getInventory();
     final List data = response.data ?? [];
-    return data.map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item)).toList();
+    return data
+        .map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item))
+        .where((item) => (item['quantity'] ?? 0) > 0) // Hide 0 quantity items
+        .toList();
   } catch (e) {
     print('Inventory error: $e');
     return [];
   }
 });
 
-class InventoryPage extends ConsumerWidget {
+// Shops provider for transfer
+final shopsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final api = ApiClient();
+  try {
+    final response = await api.getAllBuildings();
+    final List data = response.data ?? [];
+    return data
+        .where((b) => b['type'] == 'SHOP')
+        .map<Map<String, dynamic>>((b) => Map<String, dynamic>.from(b))
+        .toList();
+  } catch (e) {
+    print('Shops error: $e');
+    return [];
+  }
+});
+
+class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
 
+  @override
+  ConsumerState<InventoryPage> createState() => _InventoryPageState();
+}
+
+class _InventoryPageState extends ConsumerState<InventoryPage> {
   String _getUnitTr(String? unit) {
     switch (unit?.toUpperCase()) {
       case 'KG':
         return 'kg';
       case 'LITRE':
+      case 'LITER':
       case 'LT':
         return 'lt';
       case 'ADET':
       case 'PIECE':
         return 'adet';
       default:
-        return unit ?? 'adet';
+        return unit?.toLowerCase() ?? 'adet';
     }
   }
 
@@ -49,25 +76,7 @@ class InventoryPage extends ConsumerWidget {
     return buffer.toString();
   }
 
-  IconData _getProductIcon(String name) {
-    final lower = name.toLowerCase();
-    if (lower.contains('elma')) return Icons.apple;
-    if (lower.contains('süt') || lower.contains('sut')) return Icons.water_drop;
-    if (lower.contains('yumurta')) return Icons.egg;
-    if (lower.contains('buğday') || lower.contains('bugday')) return Icons.grass;
-    if (lower.contains('mısır') || lower.contains('misir')) return Icons.grass;
-    if (lower.contains('domates')) return Icons.local_florist;
-    if (lower.contains('patates')) return Icons.spa;
-    if (lower.contains('peynir')) return Icons.breakfast_dining;
-    if (lower.contains('ekmek')) return Icons.bakery_dining;
-    if (lower.contains('et') || lower.contains('tavuk')) return Icons.restaurant;
-    if (lower.contains('maden') || lower.contains('kömür') || lower.contains('demir')) return Icons.hardware;
-    if (lower.contains('altın') || lower.contains('altin')) return Icons.diamond;
-    return Icons.inventory_2;
-  }
-
   Widget _buildStarRating(double score) {
-    // Score is 0-100, convert to 0-5 stars
     final stars = (score / 20).clamp(0.0, 5.0);
     final fullStars = stars.floor();
     final hasHalfStar = (stars - fullStars) >= 0.5;
@@ -86,8 +95,325 @@ class InventoryPage extends ConsumerWidget {
     );
   }
 
+  // Show modal for listing item on market
+  Future<void> _showSellModal(BuildContext context, Map<String, dynamic> item) async {
+    final name = item['name'] ?? 'Ürün';
+    final maxQuantity = item['quantity'] ?? 0;
+    final itemId = item['id']?.toString() ?? '';
+    
+    int quantity = 1;
+    double price = (item['cost'] ?? item['price'] ?? 100).toDouble();
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Pazara Koy: $name'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mevcut: $maxQuantity ${_getUnitTr(item['unit'])}'),
+              const SizedBox(height: 16),
+              
+              // Quantity
+              Text('Miktar', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: AppColors.primary),
+                    onPressed: quantity > 1 ? () => setDialogState(() => quantity--) : null,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintText: 'Miktar',
+                        suffixText: _getUnitTr(item['unit']),
+                      ),
+                      controller: TextEditingController(text: quantity.toString()),
+                      onChanged: (v) {
+                        final parsed = int.tryParse(v);
+                        if (parsed != null && parsed >= 1) {
+                          setDialogState(() => quantity = parsed.clamp(1, maxQuantity) as int);
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.add_circle_outline, color: AppColors.primary),
+                    onPressed: quantity < maxQuantity ? () => setDialogState(() => quantity++) : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Price per unit
+              Text('Birim Fiyat', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: CurrencyIcon(size: 20),
+                  ),
+                  border: OutlineInputBorder(),
+                  hintText: 'Birim fiyat girin',
+                ),
+                controller: TextEditingController(text: price.toStringAsFixed(0)),
+                onChanged: (v) => setDialogState(() => price = double.tryParse(v) ?? price),
+              ),
+              const SizedBox(height: 16),
+              
+              // Total
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Toplam Değer:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Row(
+                      children: [
+                        CurrencyIcon(size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          _formatCurrency(quantity * price),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.success),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+              child: Text('İlan Ver'),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      try {
+        final api = ApiClient();
+        await api.createMarketListing(itemId, quantity: quantity, price: price);
+        ref.invalidate(inventoryProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$name pazara konuldu!'), backgroundColor: Colors.green),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Hata: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+  // Show modal for transferring item to shop
+  Future<void> _showTransferModal(BuildContext context, Map<String, dynamic> item) async {
+    final name = item['name'] ?? 'Ürün';
+    final itemId = item['id']?.toString() ?? '';
+    final maxQuantity = item['quantity'] ?? 0;
+    
+    // Load game data and shops
+    List<Map<String, dynamic>> filteredShops = [];
+    try {
+      final api = ApiClient();
+      
+      // Load game data to get allowedItems per shop subType
+      final gameDataResponse = await api.getGameData();
+      final List gameData = gameDataResponse.data ?? [];
+      
+      // Load all buildings
+      final buildingsResponse = await api.getAllBuildings();
+      final List allBuildings = buildingsResponse.data ?? [];
+      
+      // Filter shops by checking if item name is in their allowedItems
+      for (var building in allBuildings) {
+        if (building['type'] != 'SHOP') continue;
+        
+        final subType = building['subType']?.toString();
+        if (subType == null) continue;
+        
+        // Find the definition for this shop subType
+        final definition = gameData.firstWhere(
+          (d) => d['id'] == subType,
+          orElse: () => null,
+        );
+        
+        if (definition == null) continue;
+        
+        // Check if item is in allowedItems
+        final List allowedItems = definition['allowedItems'] ?? [];
+        final isAllowed = allowedItems.any((allowed) => 
+          allowed.toString().trim().toLowerCase() == name.trim().toLowerCase()
+        );
+        
+        if (isAllowed) {
+          filteredShops.add(Map<String, dynamic>.from(building));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Dükkanlar yüklenemedi: $e'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+    
+    if (filteredShops.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name için uygun dükkanınız yok. Bu ürünü satabilecek türde bir dükkan oluşturun.'), 
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    
+    String? selectedShopId = filteredShops.first['id']?.toString();
+    int quantity = 1;
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Transfer: $name'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mevcut: $maxQuantity ${_getUnitTr(item['unit'])}'),
+              const SizedBox(height: 16),
+              
+              // Shop selection
+              Text('Hedef Dükkan', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: selectedShopId,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: filteredShops.map((shop) => DropdownMenuItem(
+                  value: shop['id']?.toString(),
+                  child: Text(shop['name'] ?? 'Dükkan'),
+                )).toList(),
+                onChanged: (v) => setDialogState(() => selectedShopId = v),
+              ),
+              const SizedBox(height: 16),
+              
+              // Quantity
+              Text('Miktar', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: AppColors.primary),
+                    onPressed: quantity > 1 ? () => setDialogState(() => quantity--) : null,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        hintText: 'Miktar',
+                        suffixText: _getUnitTr(item['unit']),
+                      ),
+                      controller: TextEditingController(text: quantity.toString()),
+                      onChanged: (v) {
+                        final parsed = int.tryParse(v);
+                        if (parsed != null && parsed >= 1) {
+                          setDialogState(() => quantity = parsed.clamp(1, maxQuantity) as int);
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.add_circle_outline, color: AppColors.primary),
+                    onPressed: quantity < maxQuantity ? () => setDialogState(() => quantity++) : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text('Transfer Et'),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    if (result == true && selectedShopId != null && itemId.isNotEmpty) {
+      try {
+        final api = ApiClient();
+        await api.transferFromInventory(itemId, selectedShopId!, quantity);
+        
+        // Refresh inventory and user balance (in case of fees/sync)
+        if (mounted) {
+          ref.invalidate(inventoryProvider);
+          ref.read(authProvider.notifier).refreshUser();
+          
+          // Also invalidate the specific building detail provider so it shows the new item immediately
+          ref.invalidate(buildingDetailProvider(selectedShopId!));
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$quantity ${_getUnitTr(item['unit'])} $name transfer edildi!'), 
+              backgroundColor: Colors.green
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ApiClient.getErrorMessage(e)), 
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4), // Longer duration to read error
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final inventoryAsync = ref.watch(inventoryProvider);
 
     return RefreshIndicator(
@@ -144,7 +470,7 @@ class InventoryPage extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (error, stack) => SliverFillRemaining(
-              child: _buildErrorState(context, ref),
+              child: _buildErrorState(context),
             ),
           ),
         ],
@@ -193,7 +519,7 @@ class InventoryPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, WidgetRef ref) {
+  Widget _buildErrorState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -314,12 +640,7 @@ class InventoryPage extends ConsumerWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Open sell modal
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pazara koyma özelliği yakında')),
-                    );
-                  },
+                  onPressed: () => _showSellModal(context, item),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
@@ -331,12 +652,7 @@ class InventoryPage extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Open transfer modal
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Transfer özelliği yakında')),
-                    );
-                  },
+                  onPressed: () => _showTransferModal(context, item),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
