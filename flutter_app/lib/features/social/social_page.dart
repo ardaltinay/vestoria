@@ -107,6 +107,107 @@ class _SocialPageState extends ConsumerState<SocialPage> {
     setState(() {});
   }
 
+  void _showAddAnnouncementDialog() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    String selectedType = 'NEWS';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Yeni Duyuru Ekle'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: InputDecoration(
+                    labelText: 'Tür',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  items: ['NEWS', 'UPDATE', 'EVENT'].map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(_getTypeLabel(type)),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setDialogState(() => selectedType = val);
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleController,
+                  textAlign: TextAlign.start,
+                  decoration: InputDecoration(
+                    labelText: 'Başlık',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: contentController,
+                  textAlign: TextAlign.start,
+                  decoration: InputDecoration(
+                    labelText: 'İçerik',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final title = titleController.text.trim();
+                final content = contentController.text.trim();
+                
+                if (title.isEmpty || content.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tüm alanları doldurun')),
+                  );
+                  return;
+                }
+
+                try {
+                  final api = ApiClient();
+                  await api.createAnnouncement(title, content, selectedType);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ref.invalidate(announcementsProvider);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Duyuru başarıyla eklendi')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Hata: ${ApiClient.getErrorMessage(e)}')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Ekle'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final announcementsAsync = ref.watch(announcementsProvider);
@@ -146,11 +247,7 @@ class _SocialPageState extends ConsumerState<SocialPage> {
                 ),
                 if (isAdmin)
                   ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Duyuru ekleme özelliği yakında')),
-                      );
-                    },
+                    onPressed: _showAddAnnouncementDialog,
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Duyuru Ekle'),
                     style: ElevatedButton.styleFrom(
@@ -336,7 +433,7 @@ class _SocialPageState extends ConsumerState<SocialPage> {
                             children: [
                               Container(
                                 width: 64,
-                                height: 64,
+                                 height: 64,
                                 decoration: BoxDecoration(
                                   color: AppColors.slate100,
                                   shape: BoxShape.circle,
@@ -413,20 +510,26 @@ class _SocialPageState extends ConsumerState<SocialPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Type Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: color.withOpacity(0.2)),
-            ),
-            child: Text(
-              _getTypeLabel(type),
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+          // Type Badge - Fixed Width wrapper for alignment
+          SizedBox(
+            width: 80, // Fixed width for alignment
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: color.withOpacity(0.2)),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _getTypeLabel(type),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -438,6 +541,7 @@ class _SocialPageState extends ConsumerState<SocialPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
@@ -447,6 +551,7 @@ class _SocialPageState extends ConsumerState<SocialPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       _formatDate(createdTime),
                       style: TextStyle(

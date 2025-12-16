@@ -387,6 +387,14 @@ class ApiClient {
   Future<Response> getAnnouncements() {
     return _dio.get('/announcements');
   }
+
+  Future<Response> createAnnouncement(String title, String content, String type) {
+    return _dio.post('/announcements/create', data: {
+      'title': title.trim(),
+      'content': content.trim(),
+      'type': type,
+    });
+  }
   
   // Notifications
   Future<Response> getNotifications() {

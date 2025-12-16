@@ -317,7 +317,15 @@ class DashboardPage extends ConsumerWidget {
   }
   
   Widget _buildMarketTrends(BuildContext context, List<Map<String, dynamic>> trends) {
-    if (trends.isEmpty) {
+    // Filter out trends with no valid data
+    final validTrends = trends.where((trend) {
+      final name = trend['itemName'];
+      final hasName = name != null && name.toString().trim().isNotEmpty;
+      final hasPrice = trend['avgPrice'] != null && (trend['avgPrice'] as num) > 0;
+      return hasName || hasPrice;
+    }).toList();
+    
+    if (validTrends.isEmpty) {
       return _buildEmptyCard('Henüz pazar trendi yok');
     }
     
@@ -329,11 +337,17 @@ class DashboardPage extends ConsumerWidget {
         border: Border.all(color: AppColors.slate200),
       ),
       child: Column(
-        children: trends.take(5).map((trend) {
-          final itemName = trend['itemName'] ?? 'Ürün';
-          final avgPrice = (trend['avgPrice'] ?? 0).toDouble();
-          final volume = trend['volume'] ?? 0;
-          final priceChange = (trend['priceChange'] ?? 0).toDouble();
+        children: validTrends.take(5).map((trend) {
+          final rawName = trend['itemName'];
+          final itemName = (rawName == null || rawName.toString().trim().isEmpty) ? '-' : rawName.toString();
+          
+          final rawPrice = trend['avgPrice'];
+          final hasPrice = rawPrice != null && (rawPrice as num) > 0;
+          final avgPrice = hasPrice ? (rawPrice as num).toDouble() : 0.0;
+          
+          final rawChange = trend['priceChange'];
+          final hasChange = rawChange != null;
+          final priceChange = hasChange ? (rawChange as num).toDouble() : 0.0;
           final isUp = priceChange >= 0;
           
           return Padding(
@@ -348,40 +362,45 @@ class DashboardPage extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    const CurrencyIcon(size: 12),
-                    const SizedBox(width: 4),
-                    Text(
-                      formatCurrency(avgPrice),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    if (hasPrice) ...[
+                      const CurrencyIcon(size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        formatCurrency(avgPrice),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ] else
+                      const Text('-', style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isUp ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isUp ? Icons.arrow_upward : Icons.arrow_downward,
-                        size: 12,
-                        color: isUp ? AppColors.success : AppColors.error,
+                hasChange
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isUp ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      Text(
-                        '${priceChange.abs().toStringAsFixed(1)}%',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isUp ? AppColors.success : AppColors.error,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                            size: 12,
+                            color: isUp ? AppColors.success : AppColors.error,
+                          ),
+                          Text(
+                            '${priceChange.abs().toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isUp ? AppColors.success : AppColors.error,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    )
+                  : const Text('-', style: TextStyle(fontSize: 12)),
               ],
             ),
           );

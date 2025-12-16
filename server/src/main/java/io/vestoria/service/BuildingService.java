@@ -1,5 +1,6 @@
 package io.vestoria.service;
 
+import io.vestoria.constant.Constants;
 import io.vestoria.converter.BuildingConverter;
 import io.vestoria.dto.response.BuildingConfigDto;
 import io.vestoria.entity.BuildingEntity;
@@ -92,6 +93,45 @@ public class BuildingService {
 
         if (Boolean.TRUE.equals(building.getIsProducing())) {
             throw new BusinessRuleException("Zaten üretim yapılıyor");
+        }
+
+        // FACTORY: Check if required raw materials are available
+        if (building.getType() == BuildingType.FACTORY) {
+            List<String> requiredMaterials = Constants.FACTORY_MAP.get(productId);
+            if (requiredMaterials != null && !requiredMaterials.isEmpty()) {
+                // Tier-based material cost
+                int materialCost = switch (building.getTier()) {
+                    case SMALL -> 3;
+                    case MEDIUM -> 5;
+                    case LARGE -> 8;
+                };
+
+                // Get user's central inventory items
+                List<ItemEntity> centralInventory = itemRepository
+                        .findByOwnerIdAndBuildingIsNull(building.getOwner().getId());
+
+                for (String material : requiredMaterials) {
+                    // Check in factory inventory
+                    int factoryQty = building.getItems().stream()
+                            .filter(i -> i.getName().equalsIgnoreCase(material))
+                            .mapToInt(ItemEntity::getQuantity)
+                            .sum();
+
+                    // Check in central inventory
+                    int centralQty = centralInventory.stream()
+                            .filter(i -> i.getName().equalsIgnoreCase(material))
+                            .mapToInt(ItemEntity::getQuantity)
+                            .sum();
+
+                    int totalQty = factoryQty + centralQty;
+
+                    if (totalQty < materialCost) {
+                        throw new BusinessRuleException("Hammadde eksik: " + material
+                                + ". Bu ürünü üretmek için envanterinizde en az " + materialCost + " adet " + material
+                                + " bulunmalıdır. (Mevcut: " + totalQty + ")");
+                    }
+                }
+            }
         }
 
         // Check costs (simplified for now, can be expanded)
@@ -226,6 +266,62 @@ public class BuildingService {
 
         item.setQuantity(item.getQuantity() + quantity);
         item.setIsProducing(false);
+
+        // FACTORY: Consume raw materials from factory inventory or central inventory
+        if (building.getType() == BuildingType.FACTORY) {
+            List<String> requiredMaterials = Constants.FACTORY_MAP.get(item.getName());
+            if (requiredMaterials != null && !requiredMaterials.isEmpty()) {
+                // Tier-based material cost
+                int materialCost = switch (building.getTier()) {
+                    case SMALL -> 3;
+                    case MEDIUM -> 5;
+                    case LARGE -> 8;
+                };
+
+                List<ItemEntity> centralInventory = itemRepository
+                        .findByOwnerIdAndBuildingIsNull(building.getOwner().getId());
+
+                for (String material : requiredMaterials) {
+                    int remaining = materialCost;
+
+                    // Try factory inventory first
+                    ItemEntity factoryMaterial = building.getItems().stream()
+                            .filter(i -> i.getName().equalsIgnoreCase(material) && i.getQuantity() > 0)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (factoryMaterial != null && factoryMaterial.getQuantity() > 0) {
+                        int consumeFromFactory = Math.min(factoryMaterial.getQuantity(), remaining);
+                        factoryMaterial.setQuantity(factoryMaterial.getQuantity() - consumeFromFactory);
+                        remaining -= consumeFromFactory;
+
+                        if (factoryMaterial.getQuantity() == 0) {
+                            building.getItems().remove(factoryMaterial);
+                            itemRepository.delete(factoryMaterial);
+                        }
+                    }
+
+                    // If still need more, take from central inventory
+                    if (remaining > 0) {
+                        ItemEntity centralMaterial = centralInventory.stream()
+                                .filter(i -> i.getName().equalsIgnoreCase(material) && i.getQuantity() > 0)
+                                .findFirst()
+                                .orElse(null);
+
+                        if (centralMaterial != null && centralMaterial.getQuantity() > 0) {
+                            int consumeFromCentral = Math.min(centralMaterial.getQuantity(), remaining);
+                            centralMaterial.setQuantity(centralMaterial.getQuantity() - consumeFromCentral);
+
+                            if (centralMaterial.getQuantity() == 0) {
+                                itemRepository.delete(centralMaterial);
+                            } else {
+                                itemRepository.save(centralMaterial);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Reset status
         building.setIsProducing(false);

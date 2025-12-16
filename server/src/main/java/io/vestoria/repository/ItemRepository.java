@@ -33,4 +33,6 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
     Long sumQuantityByName(@Param("itemName") String itemName);
 
     long countByBuildingIdAndQuantityGreaterThan(UUID buildingId, int quantity);
+
+    List<ItemEntity> findByOwnerIdAndBuildingIsNull(UUID ownerId);
 }

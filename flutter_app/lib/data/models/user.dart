@@ -26,6 +26,10 @@ class User extends Equatable {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Backend sends 'isAdmin' as boolean, derive role from it
+    final bool adminFlag = json['isAdmin'] == true || json['admin'] == true;
+    final String? roleFromJson = json['role'];
+    
     return User(
       id: json['id']?.toString() ?? '',
       username: json['username'] ?? '',
@@ -33,8 +37,8 @@ class User extends Equatable {
       balance: (json['balance'] ?? 0).toDouble(),
       level: json['level'] ?? 1,
       xp: json['xp'] ?? 0,
-      isAdmin: json['isAdmin'] ?? json['role'] == 'ADMIN',
-      role: json['role'],
+      isAdmin: adminFlag || roleFromJson?.toUpperCase() == 'ADMIN',
+      role: roleFromJson ?? (adminFlag ? 'ADMIN' : 'USER'),
       createdTime: json['createdTime'] ?? json['created_time'],
       createdAt: json['createdAt'] != null 
           ? DateTime.tryParse(json['createdAt']) 

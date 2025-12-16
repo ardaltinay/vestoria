@@ -488,7 +488,7 @@ class _BuildingDetailPageState extends ConsumerState<BuildingDetailPage> {
     setState(() => _isLoading = true);
     try {
       final api = ApiClient();
-      await api.withdrawFromBuilding(building.id, productId, quantity);
+      await api.withdrawFromBuilding(building.id, itemId, quantity);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ürünler envantere aktarıldı!'), backgroundColor: Colors.green),

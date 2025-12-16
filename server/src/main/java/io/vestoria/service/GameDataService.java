@@ -33,10 +33,15 @@ public class GameDataService {
                 List<String> rawMaterials = Constants.FACTORY_MAP.values().stream().flatMap(List::stream).distinct()
                         .toList();
 
+                // Collect all factory products (keys of FACTORY_MAP)
+                List<String> factoryProducts = new ArrayList<>(Constants.FACTORY_MAP.keySet());
+
                 items.add(ItemDefinition.builder().id(subType.name()) // "FACTORY"
                         .name(subType.getLabel()) // "Fabrika"
                         .label(subType.getLabel()).description(subType.getDescription()).type(subType.getParentType())
-                        .rawMaterials(rawMaterials).build());
+                        .rawMaterials(rawMaterials)
+                        .producedItemNames(factoryProducts) // Add factory products for frontend
+                        .build());
             }
 
             if (subType.getProducedItemNames() != null && !subType.getProducedItemNames().isEmpty()) {
