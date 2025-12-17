@@ -450,8 +450,10 @@ class ApiClient {
   }
   
   // Building Actions
-  Future<Response> startSales(String buildingId) {
-    return _dio.post('/build/$buildingId/start-sales');
+  Future<Response> startSales(String buildingId, {Map<String, int>? itemPrices}) {
+    return _dio.post('/build/$buildingId/start-sales', data: {
+      if (itemPrices != null) 'itemPrices': itemPrices,
+    });
   }
   
   Future<Response> completeSale(String buildingId) {

@@ -59,10 +59,19 @@ public class BuildingController {
     }
 
     @PostMapping("/{buildingId}/start-sales")
-    public ResponseEntity<?> startSales(@PathVariable UUID buildingId, Principal principal) {
-        buildingService.startSales(buildingId, principal.getName());
-        // Fetch updated user to return
-
+    public ResponseEntity<?> startSales(@PathVariable UUID buildingId,
+            @RequestBody(required = false) java.util.Map<String, Object> request,
+            Principal principal) {
+        java.util.Map<String, Integer> itemPrices = null;
+        if (request != null && request.containsKey("itemPrices")) {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> pricesRaw = (java.util.Map<String, Object>) request.get("itemPrices");
+            itemPrices = new java.util.HashMap<>();
+            for (var entry : pricesRaw.entrySet()) {
+                itemPrices.put(entry.getKey(), ((Number) entry.getValue()).intValue());
+            }
+        }
+        buildingService.startSales(buildingId, principal.getName(), itemPrices);
         return ResponseEntity.ok("Satış işlemi başladı!");
     }
 

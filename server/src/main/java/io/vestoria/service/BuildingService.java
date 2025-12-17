@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ public class BuildingService {
     private final ItemRepository itemRepository;
 
     @Transactional
-    public void startSales(@NonNull UUID buildingId, @NonNull String username) {
+    public void startSales(@NonNull UUID buildingId, @NonNull String username, Map<String, Integer> itemPrices) {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
@@ -71,7 +72,17 @@ public class BuildingService {
             throw new BusinessRuleException("Satılacak ürün yok. Önce ürün eklemelisiniz.");
         }
 
-        // Start 10 minute timer
+        // Set item prices if provided
+        if (itemPrices != null && !itemPrices.isEmpty() && building.getItems() != null) {
+            for (ItemEntity item : building.getItems()) {
+                Integer price = itemPrices.get(item.getId().toString());
+                if (price != null && price > 0) {
+                    item.setPrice(BigDecimal.valueOf(price));
+                }
+            }
+        }
+
+        // Start timer
         building.setIsSelling(true);
         float duration = getProductionDuration(building.getType(), building.getTier());
         building.setSalesEndsAt(LocalDateTime.now().plusSeconds((long) (duration * 60)));
